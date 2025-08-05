@@ -415,6 +415,12 @@ body {
     background: white;
 }
 
+.returns-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
 .returns-table th,
 .returns-table td,
 .sensitivity-table th,
@@ -430,6 +436,23 @@ body {
     font-weight: 600;
     color: #4a5568;
     font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Make the first column (Year) sticky for horizontal scrolling */
+.returns-table th:first-child,
+.returns-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: #f8fafc;
+}
+
+/* Ensure the top-left cell (Year header) has higher z-index */
+.returns-table th:first-child {
+    z-index: 15;
 }
 
 .returns-table tr:hover,
