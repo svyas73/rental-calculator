@@ -849,13 +849,13 @@ class RentalPropertyCalculator {
             const monthlyCashFlow = this.calculateMonthlyCashFlow(adjustedInputs);
             const yearlyReturns = this.calculateYearlyReturns(adjustedInputs);
             const irr = this.calculateIRR(adjustedInputs, yearlyReturns);
-            const roi = this.calculateCashOnCashROI(adjustedInputs, monthlyCashFlow);
+            const totalCapitalGain = this.calculateTotalCapitalGain(adjustedInputs, yearlyReturns);
             
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${change > 0 ? '+' : ''}${change}%</td>
                 <td class="${monthlyCashFlow.monthlyCashFlow >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(monthlyCashFlow.monthlyCashFlow)}</td>
-                <td class="${roi >= 0 ? 'positive' : 'negative'}">${roi.toFixed(2)}%</td>
+                <td class="${totalCapitalGain >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(totalCapitalGain)}</td>
                 <td class="${irr >= 0 ? 'positive' : 'negative'}">${irr.toFixed(2)}%</td>
             `;
             tbody.appendChild(row);
