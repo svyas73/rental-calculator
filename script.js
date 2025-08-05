@@ -92,6 +92,14 @@ class RentalPropertyCalculator {
                     document.getElementById('downloadPdfBtn').addEventListener('click', () => {
                         this.downloadPdf();
                     });
+                    
+                    // Add event listeners for ROI-specific download buttons
+                    document.getElementById('downloadRoiExcelBtn').addEventListener('click', () => {
+                        this.downloadRoiExcel();
+                    });
+                    document.getElementById('downloadRoiPdfBtn').addEventListener('click', () => {
+                        this.downloadRoiPdf();
+                    });
                 }
 
     updateCalculations() {
@@ -1348,6 +1356,289 @@ class RentalPropertyCalculator {
         const dateStr = new Date().toISOString().slice(0, 10);
         const filename = `rental_analysis_complete_${dateStr}.pdf`;
 
+        // Save file
+        doc.save(filename);
+    }
+
+    downloadRoiExcel() {
+        // Get the table data
+        const table = document.getElementById('returnsTable');
+        const rows = table.querySelectorAll('tbody tr');
+        
+        if (rows.length === 0) {
+            alert('No ROI data available to export. Please run the calculation first.');
+            return;
+        }
+
+        // Prepare data array
+        const data = [];
+        
+        // Add title and timestamp
+        data.push(['ROI ANALYSIS - YEARLY RETURNS DATA']);
+        data.push([`Generated on: ${new Date().toLocaleString()}`]);
+        data.push([]);
+        
+        // Add input parameters section
+        data.push(['INPUT PARAMETERS']);
+        data.push([]);
+        
+        const inputs = this.getInputValues();
+        
+        // Property Information
+        data.push(['Property Information']);
+        data.push(['Property Price', this.formatCurrency(inputs.propertyPrice)]);
+        data.push(['Property Type', document.getElementById('propertyType').value]);
+        data.push(['Square Footage', document.getElementById('squareFootage').value + ' sq ft']);
+        data.push([]);
+        
+        // Financing Details
+        data.push(['Financing Details']);
+        data.push(['Down Payment', this.formatCurrency(inputs.downPayment)]);
+        data.push(['Interest Rate', inputs.interestRate + '%']);
+        data.push(['Loan Term', inputs.loanTerm + ' years']);
+        data.push([]);
+        
+        // Rental Income
+        data.push(['Rental Income']);
+        data.push(['Monthly Rent', this.formatCurrency(inputs.monthlyRent)]);
+        data.push(['Rent Growth Rate', inputs.rentGrowthRate + '%']);
+        data.push(['Vacancy Rate', inputs.vacancyRate + '%']);
+        data.push([]);
+        
+        // Operating Expenses
+        data.push(['Operating Expenses']);
+        data.push(['Property Tax', this.formatCurrency(inputs.propertyTax)]);
+        data.push(['Insurance', this.formatCurrency(inputs.insurance)]);
+        data.push(['HOA Fees', this.formatCurrency(inputs.hoaFees)]);
+        data.push(['Maintenance', this.formatCurrency(inputs.maintenance)]);
+        data.push(['Property Management', inputs.propertyManagement + '%']);
+        data.push([]);
+        
+        // Depreciation
+        data.push(['Depreciation']);
+        data.push(['Method', inputs.depreciationMethod]);
+        data.push(['Period', inputs.depreciationPeriod + ' years']);
+        data.push(['Land Value', this.formatCurrency(inputs.landValue)]);
+        data.push([]);
+        
+        // Analysis Parameters
+        data.push(['Analysis Parameters']);
+        data.push(['Analysis Period', inputs.analysisPeriod + ' years']);
+        data.push(['Appreciation Rate', inputs.appreciationRate + '%']);
+        data.push(['Tax Rate', inputs.taxRate + '%']);
+        data.push(['Discount Rate', inputs.discountRate + '%']);
+        data.push([]);
+        data.push([]);
+        
+        // Get headers for yearly returns table
+        const headers = [];
+        const headerCells = table.querySelectorAll('thead th');
+        headerCells.forEach(cell => {
+            const headerName = cell.querySelector('.header-name');
+            headers.push(headerName ? headerName.textContent : cell.textContent.trim());
+        });
+        
+        data.push(['YEARLY RETURNS DATA']);
+        data.push([]);
+        data.push(headers);
+        
+        // Add table data
+        rows.forEach(row => {
+            const rowData = [];
+            const cells = row.querySelectorAll('td');
+            cells.forEach(cell => {
+                rowData.push(cell.textContent.trim());
+            });
+            data.push(rowData);
+        });
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        
+        // Set column widths
+        const colWidths = headers.map(() => ({ width: 18 }));
+        ws['!cols'] = colWidths;
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'ROI Analysis');
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const filename = `roi_analysis_${timestamp}.xlsx`;
+        
+        // Save file
+        XLSX.writeFile(wb, filename);
+    }
+
+    downloadRoiPdf() {
+        // Get the table data
+        const table = document.getElementById('returnsTable');
+        const rows = table.querySelectorAll('tbody tr');
+        
+        if (rows.length === 0) {
+            alert('No ROI data available to export. Please run the calculation first.');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+        
+        // FIRST PAGE - ROI Analysis Overview
+        // Add title
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ROI Analysis - Yearly Returns Data', 14, 20);
+        
+        // Add timestamp
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const timestamp = new Date().toLocaleString();
+        doc.text(`Generated on: ${timestamp}`, 14, 30);
+        
+        // Add input parameters section in two columns
+        let yPosition = 45;
+        doc.setFont('helvetica', 'bold');
+        doc.text('INPUT PARAMETERS', 14, yPosition);
+        yPosition += 8;
+        
+        const inputs = this.getInputValues();
+        
+        // Left column parameters
+        let leftY = yPosition;
+        let rightY = yPosition;
+        const leftX = 20;
+        const rightX = 120;
+        
+        // Property Information
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Property Information:', leftX, leftY);
+        leftY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Property Price: ${this.formatCurrency(inputs.propertyPrice)}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Property Type: ${document.getElementById('propertyType').value}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Square Footage: ${document.getElementById('squareFootage').value} sq ft`, leftX + 5, leftY);
+        leftY += 6;
+        
+        // Financing Details
+        doc.setFont('helvetica', 'bold');
+        doc.text('Financing Details:', leftX, leftY);
+        leftY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Down Payment: ${this.formatCurrency(inputs.downPayment)}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Interest Rate: ${inputs.interestRate}%`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Loan Term: ${inputs.loanTerm} years`, leftX + 5, leftY);
+        leftY += 6;
+        
+        // Rental Income
+        doc.setFont('helvetica', 'bold');
+        doc.text('Rental Income:', leftX, leftY);
+        leftY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Monthly Rent: ${this.formatCurrency(inputs.monthlyRent)}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Rent Growth Rate: ${inputs.rentGrowthRate}%`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Vacancy Rate: ${inputs.vacancyRate}%`, leftX + 5, leftY);
+        
+        // Right column parameters
+        // Operating Expenses
+        doc.setFont('helvetica', 'bold');
+        doc.text('Operating Expenses:', rightX, rightY);
+        rightY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Property Tax: ${this.formatCurrency(inputs.propertyTax)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Insurance: ${this.formatCurrency(inputs.insurance)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`HOA Fees: ${this.formatCurrency(inputs.hoaFees)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Maintenance: ${this.formatCurrency(inputs.maintenance)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Property Management: ${inputs.propertyManagement}%`, rightX + 5, rightY);
+        rightY += 6;
+        
+        // Depreciation
+        doc.setFont('helvetica', 'bold');
+        doc.text('Depreciation:', rightX, rightY);
+        rightY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Method: ${inputs.depreciationMethod}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Period: ${inputs.depreciationPeriod} years`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Land Value: ${this.formatCurrency(inputs.landValue)}`, rightX + 5, rightY);
+        rightY += 6;
+        
+        // Analysis Parameters
+        doc.setFont('helvetica', 'bold');
+        doc.text('Analysis Parameters:', rightX, rightY);
+        rightY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Analysis Period: ${inputs.analysisPeriod} years`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Appreciation Rate: ${inputs.appreciationRate}%`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Tax Rate: ${inputs.taxRate}%`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Discount Rate: ${inputs.discountRate}%`, rightX + 5, rightY);
+        
+        // SECOND PAGE - Yearly Returns Table
+        doc.addPage();
+        
+        // Add yearly returns table title on second page
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('YEARLY RETURNS DATA', 14, 20);
+        
+        // Get headers and data for the table
+        const headers = [];
+        const headerCells = table.querySelectorAll('thead th');
+        headerCells.forEach(cell => {
+            const headerName = cell.querySelector('.header-name');
+            headers.push(headerName ? headerName.textContent : cell.textContent.trim());
+        });
+        
+        const tableData = [];
+        rows.forEach(row => {
+            const rowData = [];
+            const cells = row.querySelectorAll('td');
+            cells.forEach(cell => {
+                rowData.push(cell.textContent.trim());
+            });
+            tableData.push(rowData);
+        });
+        
+        // Create table on second page
+        doc.autoTable({
+            head: [headers],
+            body: tableData,
+            startY: 30,
+            styles: {
+                fontSize: 8,
+                cellPadding: 2
+            },
+            headStyles: {
+                fillColor: [102, 126, 234],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+                fillColor: [248, 250, 252]
+            },
+            margin: { top: 30, right: 14, bottom: 14, left: 14 },
+            pageBreak: 'auto'
+        });
+        
+        // Generate filename with timestamp
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const filename = `roi_analysis_${dateStr}.pdf`;
+        
         // Save file
         doc.save(filename);
     }
