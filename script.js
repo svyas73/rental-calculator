@@ -409,8 +409,8 @@ class RentalPropertyCalculator {
             // Calculate net cash flow (NOI - total mortgage payment)
             const netCashFlow = annualCashFlow;
             
-            // Calculate taxable cash flow (net cash flow + depreciation)
-            const taxableCashFlow = netCashFlow + depreciation;
+                    // Calculate taxable cash flow (net cash flow + principal paid)
+        const taxableCashFlow = netCashFlow + equityComponent;
             
             // Calculate tax savings from depreciation
             const totalDepreciationAvailable = depreciation + carriedForwardDepreciation;
@@ -747,9 +747,9 @@ class RentalPropertyCalculator {
                 <td>${this.formatCurrency(return_.netOperatingIncome)}</td>
                 <td>${this.formatCurrency(return_.totalMortgagePayment)}</td>
                 <td>${this.formatCurrency(return_.interestPayment)}</td>
+                <td>${this.formatCurrency(return_.principalPaid)}</td>
                 <td class="${return_.netCashFlow >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.netCashFlow)}</td>
                 <td class="${return_.taxableCashFlow >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.taxableCashFlow)}</td>
-                <td>${this.formatCurrency(return_.principalPaid)}</td>
                 <td>${this.formatCurrency(return_.depreciation)}</td>
                 <td class="positive">${this.formatCurrency(return_.taxSavings)}</td>
                 <td>${this.formatCurrency(return_.carriedForwardDepreciation)}</td>
