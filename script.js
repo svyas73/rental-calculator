@@ -84,6 +84,14 @@ class RentalPropertyCalculator {
                         
                         this.clearError('depreciationMethod');
                     });
+
+                    // Add event listeners for download buttons
+                    document.getElementById('downloadExcelBtn').addEventListener('click', () => {
+                        this.downloadExcel();
+                    });
+                    document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+                        this.downloadPdf();
+                    });
                 }
 
     updateCalculations() {
@@ -174,6 +182,9 @@ class RentalPropertyCalculator {
                     
                     // Show results section
                     document.getElementById('resultsSection').style.display = 'block';
+                    
+                    // Add CSS class for full-width results
+                    document.querySelector('.main-content').classList.add('results-displayed');
                     
                     // Scroll to results
                     document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
@@ -499,7 +510,7 @@ class RentalPropertyCalculator {
         
         // Add yearly cash flows
         yearlyReturns.forEach(return_ => {
-            cashFlows.push(return_.cashFlow);
+            cashFlows.push(return_.totalCashFlowForROI);
         });
         
         // Add final sale proceeds
@@ -560,7 +571,7 @@ class RentalPropertyCalculator {
         
         // Add discounted yearly cash flows
         yearlyReturns.forEach((return_, index) => {
-            const discountedCashFlow = return_.cashFlow / Math.pow(1 + discountRate, index + 1);
+            const discountedCashFlow = return_.totalCashFlowForROI / Math.pow(1 + discountRate, index + 1);
             npv += discountedCashFlow;
         });
         
@@ -580,7 +591,7 @@ class RentalPropertyCalculator {
         let cumulativeCashFlow = 0;
         
         for (let i = 0; i < yearlyReturns.length; i++) {
-            cumulativeCashFlow += yearlyReturns[i].cashFlow;
+            cumulativeCashFlow += yearlyReturns[i].totalCashFlowForROI;
             if (cumulativeCashFlow >= 0) {
                 return i + 1; // Return year number (1-based)
             }
@@ -755,7 +766,6 @@ class RentalPropertyCalculator {
                 <td>${this.formatCurrency(return_.carriedForwardDepreciation)}</td>
                 <td class="${return_.totalCashFlowForROI >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.totalCashFlowForROI)}</td>
                 <td class="${return_.roi >= 0 ? 'positive' : 'negative'}">${return_.roi.toFixed(2)}%</td>
-                <td class="${return_.cumulativeROI >= 0 ? 'positive' : 'negative'}">${return_.cumulativeROI.toFixed(2)}%</td>
             `;
             tbody.appendChild(row);
         });
@@ -984,6 +994,362 @@ class RentalPropertyCalculator {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(amount);
+    }
+
+    downloadExcel() {
+        const table = document.getElementById('returnsTable');
+        const rows = table.querySelectorAll('tr');
+        const data = [];
+
+        // Get input parameters
+        const inputs = this.getInputValues();
+        
+        // Add title and timestamp
+        data.push(['RENTAL PROPERTY INVESTMENT ANALYSIS - COMPLETE REPORT']);
+        data.push([`Generated on: ${new Date().toLocaleString()}`]);
+        data.push([]);
+        
+        // Add input parameters section
+        data.push(['INPUT PARAMETERS']);
+        data.push([]);
+        
+        // Property Information
+        data.push(['Property Information']);
+        data.push(['Property Price', this.formatCurrency(inputs.propertyPrice)]);
+        data.push(['Property Type', document.getElementById('propertyType').value]);
+        data.push(['Square Footage', document.getElementById('squareFootage').value + ' sq ft']);
+        data.push([]);
+        
+        // Financing Details
+        data.push(['Financing Details']);
+        data.push(['Down Payment', this.formatCurrency(inputs.downPayment)]);
+        data.push(['Down Payment %', (inputs.downPayment / inputs.propertyPrice * 100).toFixed(1) + '%']);
+        data.push(['Loan Amount', this.formatCurrency(inputs.loanAmount)]);
+        data.push(['Interest Rate', inputs.interestRate + '%']);
+        data.push(['Loan Term', inputs.loanTerm + ' years']);
+        data.push(['Monthly Payment', this.formatCurrency(inputs.monthlyPayment)]);
+        data.push([]);
+        
+        // Rental Income
+        data.push(['Rental Income']);
+        data.push(['Monthly Rent', this.formatCurrency(inputs.monthlyRent)]);
+        data.push(['Rent Growth Rate', inputs.rentGrowthRate + '%']);
+        data.push(['Vacancy Rate', inputs.vacancyRate + '%']);
+        data.push([]);
+        
+        // Operating Expenses
+        data.push(['Operating Expenses']);
+        data.push(['Property Tax', this.formatCurrency(inputs.propertyTax)]);
+        data.push(['Insurance', this.formatCurrency(inputs.insurance)]);
+        data.push(['HOA Fees', this.formatCurrency(inputs.hoaFees)]);
+        data.push(['Utilities', this.formatCurrency(inputs.utilities)]);
+        data.push(['Maintenance', this.formatCurrency(inputs.maintenance)]);
+        data.push(['Property Management', inputs.propertyManagement + '%']);
+        data.push([]);
+        
+        // Depreciation
+        data.push(['Depreciation']);
+        data.push(['Depreciation Method', inputs.depreciationMethod]);
+        data.push(['Depreciation Period', inputs.depreciationPeriod + ' years']);
+        data.push(['Land Value', this.formatCurrency(inputs.landValue)]);
+        data.push([]);
+        
+        // Analysis Parameters
+        data.push(['Analysis Parameters']);
+        data.push(['Analysis Period', inputs.analysisPeriod + ' years']);
+        data.push(['Appreciation Rate', inputs.appreciationRate + '%']);
+        data.push(['Selling Costs', inputs.sellingCosts + '%']);
+        data.push(['Tax Rate', inputs.taxRate + '%']);
+        data.push(['Inflation Rate', inputs.inflationRate + '%']);
+        data.push(['Discount Rate', inputs.discountRate + '%']);
+        data.push([]);
+        data.push([]);
+
+        // Add Summary Highlights
+        data.push(['SUMMARY HIGHLIGHTS']);
+        data.push([]);
+        data.push(['Total Capital Gain', document.getElementById('cashOnCashROI').textContent]);
+        data.push(['IRR', document.getElementById('irrValue').textContent]);
+        data.push(['Net Present Value', document.getElementById('npvValue').textContent]);
+        data.push(['Break-Even (Years)', document.getElementById('breakEvenYears').textContent]);
+        data.push([]);
+        data.push([]);
+
+        // Add Monthly Cash Flow Analysis
+        data.push(['MONTHLY CASH FLOW ANALYSIS']);
+        data.push([]);
+        data.push(['Gross Monthly Rent', document.getElementById('grossMonthlyRent').textContent]);
+        data.push(['Vacancy Loss', document.getElementById('vacancyLoss').textContent]);
+        data.push(['Effective Gross Income', document.getElementById('effectiveGrossIncome').textContent]);
+        data.push(['Operating Expenses', document.getElementById('operatingExpenses').textContent]);
+        data.push(['Net Operating Income', document.getElementById('netOperatingIncome').textContent]);
+        data.push(['Debt Service', document.getElementById('debtService').textContent]);
+        data.push(['Monthly Depreciation', document.getElementById('monthlyDepreciation').textContent]);
+        data.push(['Monthly Cash Flow', document.getElementById('monthlyCashFlow').textContent]);
+        data.push([]);
+        data.push([]);
+
+        // Add IRR Analysis
+        data.push(['IRR ANALYSIS']);
+        data.push([]);
+        data.push(['Initial Investment', document.getElementById('initialInvestment').textContent]);
+        data.push(['Holding Period', document.getElementById('holdingPeriod').textContent]);
+        data.push(['Total Cash Flow', document.getElementById('totalCashFlow').textContent]);
+        data.push(['Capital Gain', document.getElementById('saleProceeds').textContent]);
+        data.push(['IRR', document.getElementById('irrFinal').textContent]);
+        data.push([]);
+        data.push([]);
+
+        // Get headers for yearly returns table
+        const headers = [];
+        const headerCells = rows[0].querySelectorAll('th');
+        headerCells.forEach(cell => {
+            const headerName = cell.querySelector('.header-name');
+            headers.push(headerName ? headerName.textContent : cell.textContent.trim());
+        });
+        data.push(['YEARLY RETURNS ANALYSIS']);
+        data.push([]);
+        data.push(headers);
+
+        // Get data rows
+        for (let i = 1; i < rows.length; i++) {
+            const row = [];
+            const cells = rows[i].querySelectorAll('td');
+            cells.forEach(cell => {
+                row.push(cell.textContent.trim());
+            });
+            data.push(row);
+        }
+
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+
+        // Set column widths
+        const colWidths = headers.map(() => ({ width: 18 }));
+        ws['!cols'] = colWidths;
+
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Rental Analysis');
+
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const filename = `rental_analysis_complete_${timestamp}.xlsx`;
+
+        // Save file
+        XLSX.writeFile(wb, filename);
+    }
+
+    downloadPdf() {
+        const table = document.getElementById('returnsTable');
+        const rows = table.querySelectorAll('tr');
+        const data = [];
+
+        // Get input parameters
+        const inputs = this.getInputValues();
+
+        // Get headers
+        const headers = [];
+        const headerCells = rows[0].querySelectorAll('th');
+        headerCells.forEach(cell => {
+            const headerName = cell.querySelector('.header-name');
+            headers.push(headerName ? headerName.textContent : cell.textContent.trim());
+        });
+
+        // Get data rows
+        for (let i = 1; i < rows.length; i++) {
+            const row = [];
+            const cells = rows[i].querySelectorAll('td');
+            cells.forEach(cell => {
+                row.push(cell.textContent.trim());
+            });
+            data.push(row);
+        }
+
+        // Create PDF
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+
+        // FIRST PAGE - Complete Report Overview
+        // Add title
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Rental Property Investment Analysis - Complete Report', 14, 20);
+
+        // Add timestamp
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const timestamp = new Date().toLocaleString();
+        doc.text(`Generated on: ${timestamp}`, 14, 30);
+
+        // Add Summary Highlights
+        let yPosition = 45;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('SUMMARY HIGHLIGHTS', 14, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Total Capital Gain: ${document.getElementById('cashOnCashROI').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`IRR: ${document.getElementById('irrValue').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`Net Present Value: ${document.getElementById('npvValue').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`Break-Even: ${document.getElementById('breakEvenYears').textContent}`, 20, yPosition);
+        yPosition += 10;
+
+        // Add Monthly Cash Flow Analysis
+        doc.setFont('helvetica', 'bold');
+        doc.text('MONTHLY CASH FLOW ANALYSIS', 14, yPosition);
+        yPosition += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Gross Monthly Rent: ${document.getElementById('grossMonthlyRent').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`Monthly Cash Flow: ${document.getElementById('monthlyCashFlow').textContent}`, 20, yPosition);
+        yPosition += 10;
+
+        // Add IRR Analysis
+        doc.setFont('helvetica', 'bold');
+        doc.text('IRR ANALYSIS', 14, yPosition);
+        yPosition += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Initial Investment: ${document.getElementById('initialInvestment').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`Holding Period: ${document.getElementById('holdingPeriod').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`Total Cash Flow: ${document.getElementById('totalCashFlow').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`Capital Gain: ${document.getElementById('saleProceeds').textContent}`, 20, yPosition);
+        yPosition += 5;
+        doc.text(`IRR: ${document.getElementById('irrFinal').textContent}`, 20, yPosition);
+        yPosition += 10;
+
+        // Add input parameters section in two columns
+        doc.setFont('helvetica', 'bold');
+        doc.text('INPUT PARAMETERS', 14, yPosition);
+        yPosition += 8;
+
+        // Left column parameters
+        let leftY = yPosition;
+        let rightY = yPosition;
+        const leftX = 20;
+        const rightX = 120;
+
+        // Property Information
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Property Information:', leftX, leftY);
+        leftY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Property Price: ${this.formatCurrency(inputs.propertyPrice)}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Property Type: ${document.getElementById('propertyType').value}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Square Footage: ${document.getElementById('squareFootage').value} sq ft`, leftX + 5, leftY);
+        leftY += 6;
+
+        // Financing Details
+        doc.setFont('helvetica', 'bold');
+        doc.text('Financing Details:', leftX, leftY);
+        leftY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Down Payment: ${this.formatCurrency(inputs.downPayment)}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Interest Rate: ${inputs.interestRate}%`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Loan Term: ${inputs.loanTerm} years`, leftX + 5, leftY);
+        leftY += 6;
+
+        // Rental Income
+        doc.setFont('helvetica', 'bold');
+        doc.text('Rental Income:', leftX, leftY);
+        leftY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Monthly Rent: ${this.formatCurrency(inputs.monthlyRent)}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Rent Growth Rate: ${inputs.rentGrowthRate}%`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Vacancy Rate: ${inputs.vacancyRate}%`, leftX + 5, leftY);
+
+        // Right column parameters
+        // Operating Expenses
+        doc.setFont('helvetica', 'bold');
+        doc.text('Operating Expenses:', rightX, rightY);
+        rightY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Property Tax: ${this.formatCurrency(inputs.propertyTax)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Insurance: ${this.formatCurrency(inputs.insurance)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`HOA Fees: ${this.formatCurrency(inputs.hoaFees)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Maintenance: ${this.formatCurrency(inputs.maintenance)}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Property Management: ${inputs.propertyManagement}%`, rightX + 5, rightY);
+        rightY += 6;
+
+        // Depreciation
+        doc.setFont('helvetica', 'bold');
+        doc.text('Depreciation:', rightX, rightY);
+        rightY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Method: ${inputs.depreciationMethod}`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Period: ${inputs.depreciationPeriod} years`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Land Value: ${this.formatCurrency(inputs.landValue)}`, rightX + 5, rightY);
+        rightY += 6;
+
+        // Analysis Parameters
+        doc.setFont('helvetica', 'bold');
+        doc.text('Analysis Parameters:', rightX, rightY);
+        rightY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Analysis Period: ${inputs.analysisPeriod} years`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Appreciation Rate: ${inputs.appreciationRate}%`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Tax Rate: ${inputs.taxRate}%`, rightX + 5, rightY);
+        rightY += 4;
+        doc.text(`Discount Rate: ${inputs.discountRate}%`, rightX + 5, rightY);
+
+        // SECOND PAGE - Yearly Returns Table
+        doc.addPage();
+
+        // Add yearly returns table title on second page
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('YEARLY RETURNS ANALYSIS', 14, 20);
+
+        // Create table on second page
+        doc.autoTable({
+            head: [headers],
+            body: data,
+            startY: 30,
+            styles: {
+                fontSize: 8,
+                cellPadding: 2
+            },
+            headStyles: {
+                fillColor: [102, 126, 234],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+                fillColor: [248, 250, 252]
+            },
+            margin: { top: 30, right: 14, bottom: 14, left: 14 },
+            pageBreak: 'auto'
+        });
+
+        // Generate filename with timestamp
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const filename = `rental_analysis_complete_${dateStr}.pdf`;
+
+        // Save file
+        doc.save(filename);
     }
 }
 

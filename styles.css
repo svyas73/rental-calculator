@@ -52,12 +52,34 @@ body {
     grid-template-columns: 80px 1fr;
 }
 
+.main-content.results-displayed {
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.main-content.results-displayed .results-section {
+    width: 100%;
+    max-width: none;
+}
+
+/* Make container full width when results are displayed */
+.main-content.results-displayed .container {
+    max-width: none;
+    width: 100%;
+    padding: 0 20px;
+    margin: 0 auto;
+}
+
 @media (max-width: 1200px) {
     .main-content {
         grid-template-columns: 1fr;
     }
     
     .main-content.inputs-collapsed {
+        grid-template-columns: 1fr;
+    }
+    
+    .main-content.results-displayed {
         grid-template-columns: 1fr;
     }
 }
@@ -212,31 +234,31 @@ body {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-            .form-field input[readonly] {
-                background: #f7fafc;
-                color: #718096;
-            }
+.form-field input[readonly] {
+    background: #f7fafc;
+    color: #718096;
+}
 
-            /* Error Message Styling */
-            .error-message {
-                color: #e53e3e;
-                font-size: 0.8rem;
-                margin-top: 5px;
-                min-height: 1.2rem;
-                font-weight: 500;
-            }
+/* Error Message Styling */
+.error-message {
+    color: #e53e3e;
+    font-size: 0.8rem;
+    margin-top: 5px;
+    min-height: 1.2rem;
+    font-weight: 500;
+}
 
-            .form-field input.error,
-            .form-field select.error {
-                border-color: #e53e3e;
-                box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
-            }
+.form-field input.error,
+.form-field select.error {
+    border-color: #e53e3e;
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
 
-            .form-field input.error:focus,
-            .form-field select.error:focus {
-                border-color: #e53e3e;
-                box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2);
-            }
+.form-field input.error:focus,
+.form-field select.error:focus {
+    border-color: #e53e3e;
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2);
+}
 
 /* Calculate Button */
 .calculate-btn {
@@ -268,10 +290,27 @@ body {
 
 /* Results Section */
 .results-section {
+    margin-top: 2rem;
+    padding: 2rem;
     background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.results-header h2 {
+    margin: 0;
+    color: #1a202c;
+    font-size: 1.8rem;
+    font-weight: 600;
 }
 
 .results-container {
@@ -355,6 +394,57 @@ body {
     font-weight: 600;
 }
 
+/* Table Header with Download Buttons */
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.table-header h3 {
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 200px;
+}
+
+.download-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.download-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.download-btn:active {
+    transform: translateY(0);
+}
+
+.download-btn i {
+    font-size: 1rem;
+}
+
 /* Cash Flow Grid */
 .cash-flow-grid {
     display: grid;
@@ -404,7 +494,12 @@ body {
     max-width: 100%;
 }
 
+/* Table Styles */
 .returns-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 14px;
     min-width: 1400px;
 }
 
@@ -415,14 +510,95 @@ body {
     background: white;
 }
 
+/* Table header styles - single row with labels and column names */
+.returns-table th {
+    background-color: #f8fafc;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: 14px;
+    cursor: help;
+    padding: 8px 4px;
+    text-align: center;
+    vertical-align: top;
+    border: 1px solid #ddd;
+    line-height: 1.2;
+    min-height: 60px;
+}
+
+/* Header label styling (A, B, C, etc.) */
+.returns-table th .header-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 600;
+    background-color: #e2e8f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    display: inline-block;
+}
+
+/* Header name styling (column names) */
+.returns-table th .header-name {
+    font-size: 14px;
+    color: #333;
+    font-weight: bold;
+    line-height: 1.3;
+}
+
+/* Remove the old two-row styles */
+.returns-table thead tr:first-child th,
+.returns-table thead tr:nth-child(2) th {
+    background-color: #f8fafc;
+    font-size: 14px;
+    color: #333;
+    font-weight: bold;
+    padding: 8px 4px;
+    top: 0;
+    z-index: 10;
+    height: auto;
+}
+
 .returns-table thead {
     position: sticky;
     top: 0;
     z-index: 10;
 }
 
-.returns-table th,
-.returns-table td,
+.returns-table th:first-child,
+.returns-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background: #f8fafc;
+}
+
+.returns-table th:first-child {
+    z-index: 15;
+}
+
+/* First row first cell */
+.returns-table thead tr:first-child th:first-child {
+    background: #e2e8f0;
+    z-index: 15;
+}
+
+/* Second row first cell */
+.returns-table thead tr:nth-child(2) th:first-child {
+    background: #f8fafc;
+    z-index: 15;
+}
+
+/* Table cell styles */
+.returns-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Sensitivity table styles */
 .sensitivity-table th,
 .sensitivity-table td {
     padding: 12px 16px;
@@ -430,7 +606,6 @@ body {
     border-bottom: 1px solid #e2e8f0;
 }
 
-.returns-table th,
 .sensitivity-table th {
     background: #f8fafc;
     font-weight: 600;
@@ -441,23 +616,32 @@ body {
     z-index: 10;
 }
 
-/* Make the first column (Year) sticky for horizontal scrolling */
-.returns-table th:first-child,
-.returns-table td:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 5;
-    background: #f8fafc;
-}
-
-/* Ensure the top-left cell (Year header) has higher z-index */
-.returns-table th:first-child {
-    z-index: 15;
-}
-
+/* Hover effects */
 .returns-table tr:hover,
 .sensitivity-table tr:hover {
     background: #f8fafc;
+}
+
+/* Tooltip styles */
+.returns-table th[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.returns-table th[title] {
+    position: relative;
 }
 
 /* IRR Analysis */

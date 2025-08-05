@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Download libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -146,7 +150,7 @@
                             </div>
                             <div class="form-field">
                                 <label for="propertyManagement">Property Management Fee (%)</label>
-                                <input type="number" id="propertyManagement" value="8" min="0" max="20" step="0.1" required>
+                                <input type="number" id="propertyManagement" value="0" min="0" max="20" step="0.1" required>
                                 <div class="error-message" id="propertyManagement-error"></div>
                             </div>
                         </div>
@@ -178,7 +182,7 @@
                         <div class="form-row">
                             <div class="form-field">
                                 <label for="analysisPeriod">Analysis Period (Years)</label>
-                                <input type="number" id="analysisPeriod" value="10" min="1" max="30" step="1" required>
+                                <input type="number" id="analysisPeriod" value="15" min="1" max="30" step="1" required>
                                 <div class="error-message" id="analysisPeriod-error"></div>
                             </div>
                             <div class="form-field">
@@ -205,7 +209,7 @@
                             </div>
                             <div class="form-field">
                                 <label for="discountRate">Discount Rate (%)</label>
-                                <input type="number" id="discountRate" value="8" min="0" max="20" step="0.1" required>
+                                                                 <input type="number" id="discountRate" value="0" min="0" max="20" step="0.1" required>
                                 <div class="error-message" id="discountRate-error"></div>
                             </div>
                         </div>
@@ -218,7 +222,17 @@
             <!-- Results Section -->
             <div class="results-section" id="resultsSection" style="display: none;">
                 <div class="results-container">
-                    <h2>Investment Analysis Results</h2>
+                    <div class="results-header">
+                        <h2>Investment Analysis Results</h2>
+                        <div class="download-buttons">
+                            <button id="downloadExcelBtn" class="download-btn" title="Download Complete Report as Excel">
+                                <i class="fas fa-file-excel"></i> Download Excel Report
+                            </button>
+                            <button id="downloadPdfBtn" class="download-btn" title="Download Complete Report as PDF">
+                                <i class="fas fa-file-pdf"></i> Download PDF Report
+                            </button>
+                        </div>
+                    </div>
                     <!-- Summary Cards -->
                     <div class="summary-cards">
                         <div class="summary-card">
@@ -292,31 +306,32 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Yearly Returns Table -->
-                    <div class="result-group">
-                        <h3>Yearly Returns Analysis <span id="analysisPeriodDisplay" style="font-size: 0.8em; color: #718096; font-weight: normal;">(10 years)</span></h3>
-                        <div class="table-container">
+                                         <!-- Yearly Returns Table -->
+                     <div class="result-group">
+                         <div class="table-header">
+                             <h3>Yearly Returns Analysis <span id="analysisPeriodDisplay" style="font-size: 0.8em; color: #718096; font-weight: normal;">(15 years)</span></h3>
+                         </div>
+                         <div class="table-container">
                             <table class="returns-table" id="returnsTable">
-                                                                                                         <thead>
-                                            <tr>
-                                                <th>Year</th>
-                                                <th>Property Value</th>
-                                                <th>Annual Rent</th>
-                                                <th>Operating Expenses</th>
-                                                <th>Net Operating Income</th>
-                                                <th>Total Mortgage Payment</th>
-                                                <th>Interest Payment</th>
-                                                <th>Principal Paid</th>
-                                                <th>Net Cash Flow</th>
-                                                <th>Taxable Cash Flow</th>
-                                                <th>Depreciation</th>
-                                                <th>Tax Savings</th>
-                                                <th>Unclaimed Depreciation</th>
-                                                <th>Total Cash Flow (for ROI)</th>
-                                                <th>ROI (%)</th>
-                                                <th>Cumulative ROI (%)</th>
-                                            </tr>
-                                        </thead>
+                                <thead>
+                                    <tr>
+                                        <th title="Year"><div class="header-label">A</div><div class="header-name">Year</div></th>
+                                        <th title="Previous Value × (1 + Appreciation Rate)"><div class="header-label">B</div><div class="header-name">Property Value</div></th>
+                                        <th title="Monthly Rent × 12 × (1 + Rent Growth Rate)^Year"><div class="header-label">C</div><div class="header-name">Annual Rent</div></th>
+                                        <th title="Property Tax + Insurance + HOA + Utilities + Maintenance + Management Fee"><div class="header-label">D</div><div class="header-name">Operating Expenses</div></th>
+                                        <th title="C - D"><div class="header-label">E</div><div class="header-name">Net Operating Income</div></th>
+                                        <th title="Monthly Payment × 12"><div class="header-label">F</div><div class="header-name">Total Mortgage Payment</div></th>
+                                        <th title="F - H"><div class="header-label">G</div><div class="header-name">Interest Payment</div></th>
+                                        <th title="Annual Principal Component"><div class="header-label">H</div><div class="header-name">Principal Paid</div></th>
+                                        <th title="E - F"><div class="header-label">I</div><div class="header-name">Net Cash Flow</div></th>
+                                        <th title="I + H"><div class="header-label">J</div><div class="header-name">Taxable Cash Flow</div></th>
+                                        <th title="(Property Value - Land Value) ÷ Depreciation Period"><div class="header-label">K</div><div class="header-name">Depreciation</div></th>
+                                        <th title="min(J, K) × Tax Rate"><div class="header-label">L</div><div class="header-name">Tax Savings</div></th>
+                                        <th title="max(0, K - J) carried forward"><div class="header-label">M</div><div class="header-name">Unclaimed Depreciation</div></th>
+                                        <th title="I + L"><div class="header-label">N</div><div class="header-name">Total Cash Flow (for ROI)</div></th>
+                                        <th title="(N ÷ Down Payment) × 100"><div class="header-label">O</div><div class="header-name">ROI (%)</div></th>
+                                    </tr>
+                                </thead>
                                 <tbody id="returnsTableBody">
                                     <!-- Data will be populated by JavaScript -->
                                 </tbody>
@@ -400,6 +415,6 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=1.5"></script>
+            <script src="script.js?v=1.21"></script>
 </body>
 </html> 
