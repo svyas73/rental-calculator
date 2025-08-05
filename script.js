@@ -166,11 +166,11 @@ class RentalPropertyCalculator {
                     // Calculate break-even
                     const breakEven = this.calculateBreakEven(inputs, yearlyReturns);
                     
-                    // Calculate cash-on-cash ROI
-                    const cashOnCashROI = this.calculateCashOnCashROI(inputs, monthlyCashFlow);
+                    // Calculate total capital gain
+                    const totalCapitalGain = this.calculateTotalCapitalGain(inputs, yearlyReturns);
                     
                     // Display results
-                    this.displayResults(inputs, monthlyCashFlow, yearlyReturns, irr, npv, breakEven, cashOnCashROI);
+                    this.displayResults(inputs, monthlyCashFlow, yearlyReturns, irr, npv, breakEven, totalCapitalGain);
                     
                     // Show results section
                     document.getElementById('resultsSection').style.display = 'block';
@@ -576,14 +576,18 @@ class RentalPropertyCalculator {
         return null; // No break-even point found
     }
 
-    calculateCashOnCashROI(inputs, monthlyCashFlow) {
-        const annualCashFlow = monthlyCashFlow.monthlyCashFlow * 12;
-        // Add tax savings from depreciation for first year
-        const firstYearDepreciation = this.calculateDepreciation(inputs, 1);
-        const taxableIncome = Math.max(0, annualCashFlow);
-        const taxSavings = Math.min(firstYearDepreciation, taxableIncome) * (inputs.taxRate / 100);
-        const enhancedAnnualCashFlow = annualCashFlow + taxSavings;
-        return (enhancedAnnualCashFlow / inputs.downPayment) * 100;
+    calculateTotalCapitalGain(inputs, yearlyReturns) {
+        if (yearlyReturns.length === 0) return 0;
+        
+        const finalPropertyValue = yearlyReturns[yearlyReturns.length - 1].propertyValue;
+        const sellingCosts = finalPropertyValue * (inputs.sellingCosts / 100);
+        const remainingLoanBalance = this.calculateRemainingLoanBalance(inputs, inputs.analysisPeriod);
+        
+        // Total capital gain = Sale proceeds - Initial investment
+        const saleProceeds = finalPropertyValue - sellingCosts - remainingLoanBalance;
+        const totalCapitalGain = saleProceeds - inputs.downPayment;
+        
+        return totalCapitalGain;
     }
 
     calculateRemainingLoanBalance(inputs, years) {
@@ -679,12 +683,12 @@ class RentalPropertyCalculator {
         return 0;
     }
 
-    displayResults(inputs, monthlyCashFlow, yearlyReturns, irr, npv, breakEven, cashOnCashROI) {
+    displayResults(inputs, monthlyCashFlow, yearlyReturns, irr, npv, breakEven, totalCapitalGain) {
         // Update analysis period display
         document.getElementById('analysisPeriodDisplay').textContent = `(${inputs.analysisPeriod} years)`;
         
         // Display summary cards
-        document.getElementById('cashOnCashROI').textContent = `${cashOnCashROI.toFixed(2)}%`;
+        document.getElementById('cashOnCashROI').textContent = this.formatCurrency(totalCapitalGain);
         document.getElementById('irrValue').textContent = `${irr.toFixed(2)}%`;
         document.getElementById('npvValue').textContent = this.formatCurrency(npv);
         document.getElementById('breakEvenYears').textContent = breakEven ? `${breakEven} years` : 'Never';
