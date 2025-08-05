@@ -747,6 +747,7 @@ class RentalPropertyCalculator {
         const saleProceeds = finalPropertyValue - sellingCosts - remainingLoanBalance;
         
         document.getElementById('initialInvestment').textContent = this.formatCurrency(inputs.downPayment);
+        document.getElementById('holdingPeriod').textContent = `${inputs.analysisPeriod} years`;
         document.getElementById('totalCashFlow').textContent = this.formatCurrency(totalCashFlow);
         document.getElementById('saleProceeds').textContent = this.formatCurrency(saleProceeds);
         document.getElementById('irrFinal').textContent = `${irr.toFixed(2)}%`;
@@ -762,25 +763,73 @@ class RentalPropertyCalculator {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Set up chart
-        const padding = 40;
-        const chartWidth = canvas.width - 2 * padding;
-        const chartHeight = canvas.height - 2 * padding;
+        // Set up chart with better padding for labels
+        const leftPadding = 80;  // More space for Y-axis labels
+        const rightPadding = 20;
+        const topPadding = 30;   // Space for title
+        const bottomPadding = 50; // More space for X-axis labels
+        const chartWidth = canvas.width - leftPadding - rightPadding;
+        const chartHeight = canvas.height - topPadding - bottomPadding;
         
-        // Find min and max values
+        // Find min and max values for cash flows
         const cashFlows = yearlyReturns.map(r => r.cashFlow);
         const minCashFlow = Math.min(...cashFlows);
         const maxCashFlow = Math.max(...cashFlows);
         const range = maxCashFlow - minCashFlow;
         
+        // Ensure range is not zero for proper scaling
+        const adjustedRange = range === 0 ? Math.abs(maxCashFlow) || 1000 : range;
+        const adjustedMin = range === 0 ? minCashFlow - 500 : minCashFlow;
+        
+        // Draw chart title
+        ctx.fillStyle = '#2d3748';
+        ctx.font = 'bold 14px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('Annual Cash Flow Over Time', canvas.width / 2, 20);
+        
         // Draw axes
         ctx.strokeStyle = '#e2e8f0';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(padding, padding);
-        ctx.lineTo(padding, canvas.height - padding);
-        ctx.lineTo(canvas.width - padding, canvas.height - padding);
+        // Y-axis
+        ctx.moveTo(leftPadding, topPadding);
+        ctx.lineTo(leftPadding, canvas.height - bottomPadding);
+        // X-axis
+        ctx.moveTo(leftPadding, canvas.height - bottomPadding);
+        ctx.lineTo(canvas.width - rightPadding, canvas.height - bottomPadding);
         ctx.stroke();
+        
+        // Draw Y-axis grid lines and labels
+        ctx.strokeStyle = '#f7fafc';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#4a5568';
+        ctx.font = '12px Inter';
+        ctx.textAlign = 'right';
+        
+        const numGridLines = 5;
+        for (let i = 0; i <= numGridLines; i++) {
+            const value = adjustedMin + (adjustedRange * i / numGridLines);
+            const y = canvas.height - bottomPadding - (adjustedRange * i / numGridLines) * chartHeight;
+            
+            // Grid line
+            ctx.beginPath();
+            ctx.moveTo(leftPadding, y);
+            ctx.lineTo(canvas.width - rightPadding, y);
+            ctx.stroke();
+            
+            // Y-axis label
+            ctx.fillText(this.formatCurrency(value), leftPadding - 10, y + 4);
+        }
+        
+        // Draw X-axis labels (year numbers)
+        ctx.fillStyle = '#4a5568';
+        ctx.font = '12px Inter';
+        ctx.textAlign = 'center';
+        
+        yearlyReturns.forEach((return_, index) => {
+            const x = leftPadding + (index / (yearlyReturns.length - 1)) * chartWidth;
+            ctx.fillText(return_.year.toString(), x, canvas.height - bottomPadding + 20);
+        });
         
         // Draw cash flow line
         ctx.strokeStyle = '#667eea';
@@ -788,8 +837,8 @@ class RentalPropertyCalculator {
         ctx.beginPath();
         
         yearlyReturns.forEach((return_, index) => {
-            const x = padding + (index / (yearlyReturns.length - 1)) * chartWidth;
-            const y = canvas.height - padding - ((return_.cashFlow - minCashFlow) / range) * chartHeight;
+            const x = leftPadding + (index / (yearlyReturns.length - 1)) * chartWidth;
+            const y = canvas.height - bottomPadding - ((return_.cashFlow - adjustedMin) / adjustedRange) * chartHeight;
             
             if (index === 0) {
                 ctx.moveTo(x, y);
@@ -803,32 +852,33 @@ class RentalPropertyCalculator {
         // Draw data points
         ctx.fillStyle = '#667eea';
         yearlyReturns.forEach((return_, index) => {
-            const x = padding + (index / (yearlyReturns.length - 1)) * chartWidth;
-            const y = canvas.height - padding - ((return_.cashFlow - minCashFlow) / range) * chartHeight;
+            const x = leftPadding + (index / (yearlyReturns.length - 1)) * chartWidth;
+            const y = canvas.height - bottomPadding - ((return_.cashFlow - adjustedMin) / adjustedRange) * chartHeight;
             
             ctx.beginPath();
-            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
             ctx.fill();
+            
+            // Add white border to data points
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         });
         
-        // Add labels
-        ctx.fillStyle = '#4a5568';
-        ctx.font = '12px Inter';
+        // Draw axis labels
+        ctx.fillStyle = '#2d3748';
+        ctx.font = 'bold 12px Inter';
         ctx.textAlign = 'center';
         
-        // X-axis labels
-        yearlyReturns.forEach((return_, index) => {
-            const x = padding + (index / (yearlyReturns.length - 1)) * chartWidth;
-            ctx.fillText(`Year ${return_.year}`, x, canvas.height - padding + 20);
-        });
+        // X-axis label
+        ctx.fillText('Year', canvas.width / 2, canvas.height - 10);
         
-        // Y-axis labels
-        ctx.textAlign = 'right';
-        for (let i = 0; i <= 4; i++) {
-            const value = minCashFlow + (range * i / 4);
-            const y = canvas.height - padding - (range * i / 4) * chartHeight;
-            ctx.fillText(this.formatCurrency(value), padding - 10, y + 4);
-        }
+        // Y-axis label
+        ctx.save();
+        ctx.translate(20, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Cash Flow ($)', 0, 0);
+        ctx.restore();
     }
 
     displaySensitivityAnalysis(inputs) {
