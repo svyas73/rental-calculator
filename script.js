@@ -746,6 +746,13 @@ class RentalPropertyCalculator {
         const remainingLoanBalance = this.calculateRemainingLoanBalance(inputs, inputs.analysisPeriod);
         const saleProceeds = finalPropertyValue - sellingCosts - remainingLoanBalance;
         
+        // Debug: Log individual cash flows to understand the low total
+        console.log('Individual yearly cash flows:');
+        yearlyReturns.forEach((return_, index) => {
+            console.log(`Year ${return_.year}: $${return_.cashFlow.toFixed(2)}`);
+        });
+        console.log(`Total Cash Flow: $${totalCashFlow.toFixed(2)}`);
+        
         document.getElementById('initialInvestment').textContent = this.formatCurrency(inputs.downPayment);
         document.getElementById('holdingPeriod').textContent = `${inputs.analysisPeriod} years`;
         document.getElementById('totalCashFlow').textContent = this.formatCurrency(totalCashFlow);
@@ -817,9 +824,20 @@ class RentalPropertyCalculator {
             ctx.lineTo(canvas.width - rightPadding, y);
             ctx.stroke();
             
-            // Y-axis label
-            ctx.fillText(this.formatCurrency(value), leftPadding - 10, y + 4);
+            // Y-axis label with better positioning
+            const labelText = this.formatCurrency(value);
+            ctx.fillText(labelText, leftPadding - 15, y + 4);
         }
+        
+        // Draw Y-axis title
+        ctx.fillStyle = '#2d3748';
+        ctx.font = 'bold 12px Inter';
+        ctx.textAlign = 'center';
+        ctx.save();
+        ctx.translate(30, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Cash Flow ($)', 0, 0);
+        ctx.restore();
         
         // Draw X-axis labels (year numbers)
         ctx.fillStyle = '#4a5568';
