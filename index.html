@@ -297,24 +297,26 @@
                         <h3>Yearly Returns Analysis <span id="analysisPeriodDisplay" style="font-size: 0.8em; color: #718096; font-weight: normal;">(10 years)</span></h3>
                         <div class="table-container">
                             <table class="returns-table" id="returnsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Year</th>
-                                        <th>Property Value</th>
-                                        <th>Annual Rent</th>
-                                        <th>Operating Expenses</th>
-                                        <th>Net Operating Income</th>
-                                        <th>Mortgage Payment</th>
-                                        <th>Depreciation</th>
-                                        <th>Principal</th>
-                                        <th>Tax Savings</th>
-                                        <th>Unclaimed Depreciation</th>
-                                        <th>Cash Flow</th>
-                                        <th>Enhanced Cash Flow</th>
-                                        <th>ROI (%)</th>
-                                        <th>Cumulative ROI (%)</th>
-                                    </tr>
-                                </thead>
+                                                                 <thead>
+                                     <tr>
+                                         <th>Year</th>
+                                         <th>Property Value</th>
+                                         <th>Annual Rent</th>
+                                         <th>Operating Expenses</th>
+                                         <th>Net Operating Income</th>
+                                         <th>Total Mortgage Payment</th>
+                                         <th>Interest Payment</th>
+                                         <th>Net Cash Flow</th>
+                                         <th>Taxable Cash Flow</th>
+                                         <th>Principal Paid</th>
+                                         <th>Depreciation</th>
+                                         <th>Tax Savings</th>
+                                         <th>Unclaimed Depreciation</th>
+                                         <th>Total Cash Flow (for ROI)</th>
+                                         <th>ROI (%)</th>
+                                         <th>Cumulative ROI (%)</th>
+                                     </tr>
+                                 </thead>
                                 <tbody id="returnsTableBody">
                                     <!-- Data will be populated by JavaScript -->
                                 </tbody>
@@ -342,7 +344,7 @@
                                     <span class="value" id="totalCashFlow">-</span>
                                 </div>
                                 <div class="irr-item">
-                                    <span class="label">Property Sale Proceeds:</span>
+                                    <span class="label">Capital Gain:</span>
                                     <span class="value" id="saleProceeds">-</span>
                                 </div>
                                 <div class="irr-item">
@@ -398,6 +400,6 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=1.3"></script>
+    <script src="script.js?v=1.4"></script>
 </body>
 </html> 

@@ -403,18 +403,29 @@ class RentalPropertyCalculator {
             // Calculate equity component paid in mortgage (principal portion) - annual amount
             const equityComponent = this.calculateAnnualEquityComponent(inputs, year);
             
+            // Calculate interest payment
+            const interestPayment = this.calculateAnnualInterestPayment(inputs, year);
+            
+            // Calculate net cash flow (NOI - total mortgage payment)
+            const netCashFlow = annualCashFlow;
+            
+            // Calculate taxable cash flow (net cash flow + depreciation)
+            const taxableCashFlow = netCashFlow + depreciation;
+            
             // Calculate tax savings from depreciation
             const totalDepreciationAvailable = depreciation + carriedForwardDepreciation;
-            const taxableIncome = Math.max(0, annualCashFlow); // Only positive cash flow is taxable
+            const taxableIncome = Math.max(0, taxableCashFlow); // Only positive taxable cash flow is taxable
             const taxSavings = Math.min(totalDepreciationAvailable, taxableIncome) * (inputs.taxRate / 100);
             const remainingDepreciation = Math.max(0, totalDepreciationAvailable - taxableIncome);
             
             // Update carried forward depreciation for next year
             carriedForwardDepreciation = remainingDepreciation;
             
-            // Calculate enhanced ROI including equity component and tax savings
-            const enhancedCashFlow = annualCashFlow + taxSavings;
-            const annualROI = (enhancedCashFlow / inputs.downPayment) * 100;
+            // Calculate total cash flow for ROI (net cash flow + tax savings)
+            const totalCashFlowForROI = netCashFlow + taxSavings;
+            
+            // Calculate enhanced ROI including tax savings
+            const annualROI = (totalCashFlowForROI / inputs.downPayment) * 100;
             cumulativeROI += annualROI;
             
             returns.push({
@@ -423,13 +434,15 @@ class RentalPropertyCalculator {
                 annualRent: currentMonthlyRent * 12,
                 operatingExpenses: this.calculateAnnualOperatingExpenses(inputs, currentMonthlyRent),
                 netOperatingIncome: this.calculateAnnualNOI(inputs, currentMonthlyRent),
-                debtService: inputs.monthlyPayment * 12,
+                totalMortgagePayment: inputs.monthlyPayment * 12,
+                interestPayment: interestPayment,
+                netCashFlow: netCashFlow,
+                taxableCashFlow: taxableCashFlow,
+                principalPaid: equityComponent,
                 depreciation: depreciation,
-                equityComponent: equityComponent,
                 taxSavings: taxSavings,
                 carriedForwardDepreciation: carriedForwardDepreciation,
-                cashFlow: annualCashFlow,
-                enhancedCashFlow: enhancedCashFlow,
+                totalCashFlowForROI: totalCashFlowForROI,
                 roi: annualROI,
                 cumulativeROI: cumulativeROI
             });
@@ -652,6 +665,13 @@ class RentalPropertyCalculator {
         return annualPrincipal;
     }
 
+    calculateAnnualInterestPayment(inputs, year) {
+        // Calculate the interest portion of the mortgage payment for a specific year
+        const totalAnnualPayment = inputs.monthlyPayment * 12;
+        const principalPaid = this.calculateAnnualEquityComponent(inputs, year);
+        return totalAnnualPayment - principalPaid;
+    }
+
     calculateDepreciation(inputs, year) {
         if (inputs.depreciationMethod === 'none' || inputs.depreciationPeriod <= 0) {
             return 0;
@@ -725,13 +745,15 @@ class RentalPropertyCalculator {
                 <td>${this.formatCurrency(return_.annualRent)}</td>
                 <td>${this.formatCurrency(return_.operatingExpenses)}</td>
                 <td>${this.formatCurrency(return_.netOperatingIncome)}</td>
-                <td>${this.formatCurrency(return_.debtService)}</td>
+                <td>${this.formatCurrency(return_.totalMortgagePayment)}</td>
+                <td>${this.formatCurrency(return_.interestPayment)}</td>
+                <td class="${return_.netCashFlow >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.netCashFlow)}</td>
+                <td class="${return_.taxableCashFlow >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.taxableCashFlow)}</td>
+                <td>${this.formatCurrency(return_.principalPaid)}</td>
                 <td>${this.formatCurrency(return_.depreciation)}</td>
-                <td>${this.formatCurrency(return_.equityComponent)}</td>
                 <td class="positive">${this.formatCurrency(return_.taxSavings)}</td>
                 <td>${this.formatCurrency(return_.carriedForwardDepreciation)}</td>
-                <td class="${return_.cashFlow >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.cashFlow)}</td>
-                <td class="${return_.enhancedCashFlow >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.enhancedCashFlow)}</td>
+                <td class="${return_.totalCashFlowForROI >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(return_.totalCashFlowForROI)}</td>
                 <td class="${return_.roi >= 0 ? 'positive' : 'negative'}">${return_.roi.toFixed(2)}%</td>
                 <td class="${return_.cumulativeROI >= 0 ? 'positive' : 'negative'}">${return_.cumulativeROI.toFixed(2)}%</td>
             `;
@@ -740,23 +762,24 @@ class RentalPropertyCalculator {
     }
 
     displayIRRAnalysis(inputs, yearlyReturns, irr) {
-        const totalCashFlow = yearlyReturns.reduce((sum, return_) => sum + return_.cashFlow, 0);
+        const totalCashFlow = yearlyReturns.reduce((sum, return_) => sum + return_.totalCashFlowForROI, 0);
         const finalPropertyValue = yearlyReturns[yearlyReturns.length - 1].propertyValue;
         const sellingCosts = finalPropertyValue * (inputs.sellingCosts / 100);
         const remainingLoanBalance = this.calculateRemainingLoanBalance(inputs, inputs.analysisPeriod);
         const saleProceeds = finalPropertyValue - sellingCosts - remainingLoanBalance;
+        const capitalGain = saleProceeds - inputs.downPayment;
         
         // Debug: Log individual cash flows to understand the low total
         console.log('Individual yearly cash flows:');
         yearlyReturns.forEach((return_, index) => {
-            console.log(`Year ${return_.year}: $${return_.cashFlow.toFixed(2)}`);
+            console.log(`Year ${return_.year}: $${return_.totalCashFlowForROI.toFixed(2)}`);
         });
         console.log(`Total Cash Flow: $${totalCashFlow.toFixed(2)}`);
         
         document.getElementById('initialInvestment').textContent = this.formatCurrency(inputs.downPayment);
         document.getElementById('holdingPeriod').textContent = `${inputs.analysisPeriod} years`;
         document.getElementById('totalCashFlow').textContent = this.formatCurrency(totalCashFlow);
-        document.getElementById('saleProceeds').textContent = this.formatCurrency(saleProceeds);
+        document.getElementById('saleProceeds').textContent = this.formatCurrency(capitalGain);
         document.getElementById('irrFinal').textContent = `${irr.toFixed(2)}%`;
         
         // Draw IRR chart
@@ -779,7 +802,7 @@ class RentalPropertyCalculator {
         const chartHeight = canvas.height - topPadding - bottomPadding;
         
         // Find min and max values for cash flows
-        const cashFlows = yearlyReturns.map(r => r.cashFlow);
+        const cashFlows = yearlyReturns.map(r => r.totalCashFlowForROI);
         const minCashFlow = Math.min(...cashFlows);
         const maxCashFlow = Math.max(...cashFlows);
         const range = maxCashFlow - minCashFlow;
@@ -856,7 +879,7 @@ class RentalPropertyCalculator {
         
         yearlyReturns.forEach((return_, index) => {
             const x = leftPadding + (index / (yearlyReturns.length - 1)) * chartWidth;
-            const y = canvas.height - bottomPadding - ((return_.cashFlow - adjustedMin) / adjustedRange) * chartHeight;
+            const y = canvas.height - bottomPadding - ((return_.totalCashFlowForROI - adjustedMin) / adjustedRange) * chartHeight;
             
             if (index === 0) {
                 ctx.moveTo(x, y);
@@ -871,7 +894,7 @@ class RentalPropertyCalculator {
         ctx.fillStyle = '#667eea';
         yearlyReturns.forEach((return_, index) => {
             const x = leftPadding + (index / (yearlyReturns.length - 1)) * chartWidth;
-            const y = canvas.height - bottomPadding - ((return_.cashFlow - adjustedMin) / adjustedRange) * chartHeight;
+            const y = canvas.height - bottomPadding - ((return_.totalCashFlowForROI - adjustedMin) / adjustedRange) * chartHeight;
             
             ctx.beginPath();
             ctx.arc(x, y, 5, 0, 2 * Math.PI);
