@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental Property Investment Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-home"></i> Rental Property Investment Calculator</h1>
+            <p>Comprehensive analysis tool for real estate investment decisions</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Section -->
+            <div class="input-section" id="inputSection">
+                <div class="form-container">
+                    <div class="form-header">
+                        <h2>Property Details</h2>
+                        <button id="toggleInputsBtn" class="toggle-btn" title="Minimize/Maximize Input Section">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                    </div>
+                    <!-- Property Information -->
+                    <div class="form-group">
+                        <h3>Property Information</h3>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="propertyPrice">Purchase Price ($)</label>
+                                <input type="number" id="propertyPrice" value="300000" min="0" step="1000" required>
+                                <div class="error-message" id="propertyPrice-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="propertyType">Property Type</label>
+                                <select id="propertyType" required>
+                                    <option value="single-family">Single Family</option>
+                                    <option value="multi-family">Multi-Family</option>
+                                    <option value="condo">Condo</option>
+                                    <option value="townhouse">Townhouse</option>
+                                    <option value="commercial">Commercial</option>
+                                </select>
+                                <div class="error-message" id="propertyType-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="squareFootage">Square Footage</label>
+                                <input type="number" id="squareFootage" value="1500" min="0" step="50" required>
+                                <div class="error-message" id="squareFootage-error"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Financing Details -->
+                    <div class="form-group">
+                        <h3>Financing Details</h3>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="downPayment">Down Payment ($)</label>
+                                <input type="number" id="downPayment" value="60000" min="0" step="1000" required>
+                                <div class="error-message" id="downPayment-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="downPaymentPercent">Down Payment (%)</label>
+                                <input type="number" id="downPaymentPercent" value="20" min="0" max="100" step="0.1" required>
+                                <div class="error-message" id="downPaymentPercent-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="loanAmount">Loan Amount ($)</label>
+                                <input type="number" id="loanAmount" value="240000" min="0" step="1000" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="interestRate">Interest Rate (%)</label>
+                                <input type="number" id="interestRate" value="4.5" min="0" max="20" step="0.01" required>
+                                <div class="error-message" id="interestRate-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="loanTerm">Loan Term (Years)</label>
+                                <select id="loanTerm" required>
+                                    <option value="15">15 Years</option>
+                                    <option value="20">20 Years</option>
+                                    <option value="30" selected>30 Years</option>
+                                </select>
+                                <div class="error-message" id="loanTerm-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="monthlyPayment">Monthly Payment ($)</label>
+                                <input type="number" id="monthlyPayment" value="1216" min="0" step="1" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Rental Income -->
+                    <div class="form-group">
+                        <h3>Rental Income</h3>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="monthlyRent">Monthly Rent ($)</label>
+                                <input type="number" id="monthlyRent" value="2000" min="0" step="50" required>
+                                <div class="error-message" id="monthlyRent-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="rentGrowthRate">Annual Rent Growth Rate (%)</label>
+                                <input type="number" id="rentGrowthRate" value="3" min="0" max="20" step="0.1" required>
+                                <div class="error-message" id="rentGrowthRate-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="vacancyRate">Vacancy Rate (%)</label>
+                                <input type="number" id="vacancyRate" value="5" min="0" max="50" step="0.1" required>
+                                <div class="error-message" id="vacancyRate-error"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Operating Expenses -->
+                    <div class="form-group">
+                        <h3>Operating Expenses</h3>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="propertyTax">Annual Property Tax ($)</label>
+                                <input type="number" id="propertyTax" value="3600" min="0" step="100" required>
+                                <div class="error-message" id="propertyTax-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="insurance">Annual Insurance ($)</label>
+                                <input type="number" id="insurance" value="1200" min="0" step="100" required>
+                                <div class="error-message" id="insurance-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="hoaFees">Monthly HOA Fees ($)</label>
+                                <input type="number" id="hoaFees" value="0" min="0" step="10" required>
+                                <div class="error-message" id="hoaFees-error"></div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="utilities">Monthly Utilities ($)</label>
+                                <input type="number" id="utilities" value="200" min="0" step="10" required>
+                                <div class="error-message" id="utilities-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="maintenance">Monthly Maintenance ($)</label>
+                                <input type="number" id="maintenance" value="150" min="0" step="10" required>
+                                <div class="error-message" id="maintenance-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="propertyManagement">Property Management Fee (%)</label>
+                                <input type="number" id="propertyManagement" value="8" min="0" max="20" step="0.1" required>
+                                <div class="error-message" id="propertyManagement-error"></div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="depreciationMethod">Depreciation Method</label>
+                                <select id="depreciationMethod" required>
+                                    <option value="straight-line">Straight-Line (27.5 years)</option>
+                                    <option value="accelerated">Accelerated (MACRS)</option>
+                                    <option value="none">No Depreciation</option>
+                                </select>
+                                <div class="error-message" id="depreciationMethod-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="depreciationPeriod">Depreciation Period (Years)</label>
+                                <input type="number" id="depreciationPeriod" value="27.5" min="1" max="50" step="0.5" required>
+                                <div class="error-message" id="depreciationPeriod-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="landValue">Land Value ($)</label>
+                                <input type="number" id="landValue" value="60000" min="0" step="1000" required>
+                                <div class="error-message" id="landValue-error"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Investment Parameters -->
+                    <div class="form-group">
+                        <h3>Investment Parameters</h3>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="analysisPeriod">Analysis Period (Years)</label>
+                                <input type="number" id="analysisPeriod" value="10" min="1" max="30" step="1" required>
+                                <div class="error-message" id="analysisPeriod-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="appreciationRate">Annual Appreciation Rate (%)</label>
+                                <input type="number" id="appreciationRate" value="3" min="0" max="20" step="0.1" required>
+                                <div class="error-message" id="appreciationRate-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="sellingCosts">Selling Costs (%)</label>
+                                <input type="number" id="sellingCosts" value="6" min="0" max="20" step="0.1" required>
+                                <div class="error-message" id="sellingCosts-error"></div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="taxRate">Tax Rate (%)</label>
+                                <input type="number" id="taxRate" value="25" min="0" max="50" step="0.1" required>
+                                <div class="error-message" id="taxRate-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="inflationRate">Inflation Rate (%)</label>
+                                <input type="number" id="inflationRate" value="2" min="0" max="20" step="0.1" required>
+                                <div class="error-message" id="inflationRate-error"></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="discountRate">Discount Rate (%)</label>
+                                <input type="number" id="discountRate" value="8" min="0" max="20" step="0.1" required>
+                                <div class="error-message" id="discountRate-error"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="calculateBtn" class="calculate-btn">
+                        <i class="fas fa-calculator"></i> Calculate Investment Analysis
+                    </button>
+                </div>
+            </div>
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-container">
+                    <h2>Investment Analysis Results</h2>
+                    <!-- Summary Cards -->
+                    <div class="summary-cards">
+                        <div class="summary-card">
+                            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="card-content">
+                                <h3>Cash-on-Cash ROI</h3>
+                                <div class="card-value" id="cashOnCashROI">-</div>
+                                <div class="card-label">Annual Return</div>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon"><i class="fas fa-percentage"></i></div>
+                            <div class="card-content">
+                                <h3>IRR</h3>
+                                <div class="card-value" id="irrValue">-</div>
+                                <div class="card-label">Internal Rate of Return</div>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon"><i class="fas fa-dollar-sign"></i></div>
+                            <div class="card-content">
+                                <h3>Net Present Value</h3>
+                                <div class="card-value" id="npvValue">-</div>
+                                <div class="card-label">NPV</div>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="card-icon"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="card-content">
+                                <h3>Break-Even</h3>
+                                <div class="card-value" id="breakEvenYears">-</div>
+                                <div class="card-label">Years</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Monthly Cash Flow -->
+                    <div class="result-group">
+                        <h3>Monthly Cash Flow Analysis</h3>
+                        <div class="cash-flow-grid">
+                            <div class="cash-flow-item">
+                                <span class="label">Gross Monthly Rent:</span>
+                                <span class="value" id="grossMonthlyRent">-</span>
+                            </div>
+                            <div class="cash-flow-item">
+                                <span class="label">Vacancy Loss:</span>
+                                <span class="value negative" id="vacancyLoss">-</span>
+                            </div>
+                            <div class="cash-flow-item">
+                                <span class="label">Effective Gross Income:</span>
+                                <span class="value" id="effectiveGrossIncome">-</span>
+                            </div>
+                            <div class="cash-flow-item">
+                                <span class="label">Operating Expenses:</span>
+                                <span class="value negative" id="operatingExpenses">-</span>
+                            </div>
+                            <div class="cash-flow-item">
+                                <span class="label">Net Operating Income:</span>
+                                <span class="value" id="netOperatingIncome">-</span>
+                            </div>
+                            <div class="cash-flow-item">
+                                <span class="label">Debt Service:</span>
+                                <span class="value negative" id="debtService">-</span>
+                            </div>
+                            <div class="cash-flow-item">
+                                <span class="label">Monthly Depreciation:</span>
+                                <span class="value" id="monthlyDepreciation">-</span>
+                            </div>
+                            <div class="cash-flow-item total">
+                                <span class="label">Monthly Cash Flow:</span>
+                                <span class="value" id="monthlyCashFlow">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Yearly Returns Table -->
+                    <div class="result-group">
+                        <h3>Yearly Returns Analysis <span id="analysisPeriodDisplay" style="font-size: 0.8em; color: #718096; font-weight: normal;">(10 years)</span></h3>
+                        <div class="table-container">
+                            <table class="returns-table" id="returnsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Year</th>
+                                        <th>Property Value</th>
+                                        <th>Annual Rent</th>
+                                        <th>Operating Expenses</th>
+                                        <th>Net Operating Income</th>
+                                        <th>Mortgage Payment</th>
+                                        <th>Depreciation</th>
+                                        <th>Equity Component</th>
+                                        <th>Tax Savings</th>
+                                        <th>Unclaimed Depreciation</th>
+                                        <th>Cash Flow</th>
+                                        <th>Enhanced Cash Flow</th>
+                                        <th>ROI (%)</th>
+                                        <th>Cumulative ROI (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="returnsTableBody">
+                                    <!-- Data will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- IRR Analysis -->
+                    <div class="result-group">
+                        <h3>IRR Analysis</h3>
+                        <div class="irr-analysis">
+                            <div class="irr-chart-container">
+                                <canvas id="irrChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="irr-details">
+                                <div class="irr-item">
+                                    <span class="label">Initial Investment:</span>
+                                    <span class="value" id="initialInvestment">-</span>
+                                </div>
+                                <div class="irr-item">
+                                    <span class="label">Total Cash Flow:</span>
+                                    <span class="value" id="totalCashFlow">-</span>
+                                </div>
+                                <div class="irr-item">
+                                    <span class="label">Property Sale Proceeds:</span>
+                                    <span class="value" id="saleProceeds">-</span>
+                                </div>
+                                <div class="irr-item">
+                                    <span class="label">IRR:</span>
+                                    <span class="value highlight" id="irrFinal">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Sensitivity Analysis -->
+                    <div class="result-group">
+                        <h3>Sensitivity Analysis</h3>
+                        <div class="sensitivity-grid">
+                            <div class="sensitivity-item">
+                                <h4>Rent Variation Impact</h4>
+                                <div class="sensitivity-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Rent Change</th>
+                                                <th>Cash Flow</th>
+                                                <th>ROI</th>
+                                                <th>IRR</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="rentSensitivityBody">
+                                            <!-- Data will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="sensitivity-item">
+                                <h4>Appreciation Impact</h4>
+                                <div class="sensitivity-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Appreciation</th>
+                                                <th>Property Value</th>
+                                                <th>Total Return</th>
+                                                <th>IRR</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="appreciationSensitivityBody">
+                                            <!-- Data will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
