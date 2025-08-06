@@ -429,16 +429,18 @@ class RentalPropertyCalculator {
             const netCashFlow = annualCashFlow;
             
                     // Calculate taxable cash flow (net cash flow + principal paid)
-        const taxableCashFlow = netCashFlow + equityComponent;
+            const taxableCashFlow = netCashFlow + equityComponent;
             
-            // Calculate tax savings from depreciation
+            // Calculate tax savings from depreciation using max(0, k-j) formula
+            // where k = depreciation, j = net cash flow (taxable income before depreciation)
             const totalDepreciationAvailable = depreciation + carriedForwardDepreciation;
-            const taxableIncome = Math.max(0, taxableCashFlow); // Only positive taxable cash flow is taxable
-            const taxSavings = Math.min(totalDepreciationAvailable, taxableIncome) * (inputs.taxRate / 100);
-            const remainingDepreciation = Math.max(0, totalDepreciationAvailable - taxableIncome);
+            const taxableIncomeBeforeDepreciation = Math.max(0, netCashFlow); // j in the formula
+            const unclaimedDepreciation = Math.max(0, totalDepreciationAvailable - taxableIncomeBeforeDepreciation); // max(0, k-j)
+            const usedDepreciation = Math.min(totalDepreciationAvailable, taxableIncomeBeforeDepreciation);
+            const taxSavings = usedDepreciation * (inputs.taxRate / 100);
             
             // Update carried forward depreciation for next year
-            carriedForwardDepreciation = remainingDepreciation;
+            carriedForwardDepreciation = unclaimedDepreciation;
             
             // Calculate total cash flow for ROI (net cash flow + tax savings)
             const totalCashFlowForROI = netCashFlow + taxSavings;
@@ -756,7 +758,35 @@ class RentalPropertyCalculator {
         const tbody = document.getElementById('returnsTableBody');
         tbody.innerHTML = '';
         
-        yearlyReturns.forEach(return_ => {
+                        // Calculate totals for summable columns
+                const totals = {
+                    annualRent: 0,
+                    operatingExpenses: 0,
+                    netOperatingIncome: 0,
+                    totalMortgagePayment: 0,
+                    interestPayment: 0,
+                    principalPaid: 0,
+                    netCashFlow: 0,
+                    taxableCashFlow: 0,
+                    depreciation: 0,
+                    taxSavings: 0,
+                    totalCashFlowForROI: 0
+                };
+        
+                        yearlyReturns.forEach(return_ => {
+                    // Add to totals
+                    totals.annualRent += return_.annualRent;
+                    totals.operatingExpenses += return_.operatingExpenses;
+                    totals.netOperatingIncome += return_.netOperatingIncome;
+                    totals.totalMortgagePayment += return_.totalMortgagePayment;
+                    totals.interestPayment += return_.interestPayment;
+                    totals.principalPaid += return_.principalPaid;
+                    totals.netCashFlow += return_.netCashFlow;
+                    totals.taxableCashFlow += return_.taxableCashFlow;
+                    totals.depreciation += return_.depreciation;
+                    totals.taxSavings += return_.taxSavings;
+                    totals.totalCashFlowForROI += return_.totalCashFlowForROI;
+            
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${return_.year}</td>
@@ -777,6 +807,28 @@ class RentalPropertyCalculator {
             `;
             tbody.appendChild(row);
         });
+        
+                        // Add totals row
+                const totalsRow = document.createElement('tr');
+                totalsRow.className = 'totals-row';
+                totalsRow.innerHTML = `
+                    <td><strong>TOTAL</strong></td>
+                    <td><strong>-</strong></td>
+                    <td><strong>${this.formatCurrency(totals.annualRent)}</strong></td>
+                    <td><strong>${this.formatCurrency(totals.operatingExpenses)}</strong></td>
+                    <td><strong>${this.formatCurrency(totals.netOperatingIncome)}</strong></td>
+                    <td><strong>${this.formatCurrency(totals.totalMortgagePayment)}</strong></td>
+                    <td><strong>${this.formatCurrency(totals.interestPayment)}</strong></td>
+                    <td><strong>${this.formatCurrency(totals.principalPaid)}</strong></td>
+                    <td class="${totals.netCashFlow >= 0 ? 'positive' : 'negative'}"><strong>${this.formatCurrency(totals.netCashFlow)}</strong></td>
+                    <td class="${totals.taxableCashFlow >= 0 ? 'positive' : 'negative'}"><strong>${this.formatCurrency(totals.taxableCashFlow)}</strong></td>
+                    <td><strong>${this.formatCurrency(totals.depreciation)}</strong></td>
+                    <td class="positive"><strong>${this.formatCurrency(totals.taxSavings)}</strong></td>
+                    <td><strong>-</strong></td>
+                    <td class="${totals.totalCashFlowForROI >= 0 ? 'positive' : 'negative'}"><strong>${this.formatCurrency(totals.totalCashFlowForROI)}</strong></td>
+                    <td><strong>-</strong></td>
+                `;
+        tbody.appendChild(totalsRow);
     }
 
     displayIRRAnalysis(inputs, yearlyReturns, irr) {

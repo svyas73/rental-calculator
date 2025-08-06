@@ -622,6 +622,23 @@ body {
     background: #f8fafc;
 }
 
+/* Totals row styling */
+.returns-table .totals-row {
+    background: #f1f5f9;
+    border-top: 2px solid #64748b;
+    font-weight: 600;
+}
+
+.returns-table .totals-row:hover {
+    background: #e2e8f0;
+}
+
+.returns-table .totals-row td {
+    border-top: 2px solid #64748b;
+    font-weight: 600;
+    color: #1e293b;
+}
+
 /* Tooltip styles */
 .returns-table th[title]:hover::after {
     content: attr(title);
