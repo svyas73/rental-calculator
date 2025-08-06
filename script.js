@@ -431,16 +431,16 @@ class RentalPropertyCalculator {
                     // Calculate taxable cash flow (net cash flow + principal paid)
             const taxableCashFlow = netCashFlow + equityComponent;
             
-            // Calculate tax savings from depreciation using max(0, k-j) formula
-            // where k = depreciation, j = net cash flow (taxable income before depreciation)
-            const totalDepreciationAvailable = depreciation + carriedForwardDepreciation;
-            const taxableIncomeBeforeDepreciation = Math.max(0, netCashFlow); // j in the formula
-            const unclaimedDepreciation = Math.max(0, totalDepreciationAvailable - taxableIncomeBeforeDepreciation); // max(0, k-j)
-            const usedDepreciation = Math.min(totalDepreciationAvailable, taxableIncomeBeforeDepreciation);
-            const taxSavings = usedDepreciation * (inputs.taxRate / 100);
-            
-            // Update carried forward depreciation for next year
-            carriedForwardDepreciation = unclaimedDepreciation;
+                    // Calculate tax savings from depreciation using max(0, k-j) formula
+        // where k = depreciation, j = taxable cash flow (taxable income before depreciation)
+        const totalDepreciationAvailable = depreciation + carriedForwardDepreciation;
+        const taxableIncomeBeforeDepreciation = Math.max(0, taxableCashFlow); // j in the formula
+        const unclaimedDepreciation = Math.max(0, totalDepreciationAvailable - taxableIncomeBeforeDepreciation); // max(0, k-j)
+        const usedDepreciation = Math.min(totalDepreciationAvailable, taxableIncomeBeforeDepreciation);
+        const taxSavings = usedDepreciation * (inputs.taxRate / 100);
+
+        // Update carried forward depreciation for next year
+        carriedForwardDepreciation = unclaimedDepreciation;
             
             // Calculate total cash flow for ROI (net cash flow + tax savings)
             const totalCashFlowForROI = netCashFlow + taxSavings;
