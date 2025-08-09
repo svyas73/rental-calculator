@@ -922,15 +922,7 @@ class RentalPropertyCalculator {
             ctx.fillText(labelText, leftPadding - 15, y + 4);
         }
         
-        // Draw Y-axis title
-        ctx.fillStyle = '#2d3748';
-        ctx.font = 'bold 12px Inter';
-        ctx.textAlign = 'center';
-        ctx.save();
-        ctx.translate(30, canvas.height / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText('Cash Flow ($)', 0, 0);
-        ctx.restore();
+        // Y-axis title will be drawn later to avoid duplication
         
         // Draw X-axis labels (year numbers)
         ctx.fillStyle = '#4a5568';
