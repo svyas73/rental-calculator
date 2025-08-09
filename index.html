@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
     <title>Rental Property Investment Calculator</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Download libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -17,6 +19,15 @@
         <header class="header">
             <h1><i class="fas fa-home"></i> Rental Property Investment Calculator</h1>
             <p>Comprehensive analysis tool for real estate investment decisions</p>
+            <!-- Mobile Quick Actions -->
+            <div class="mobile-quick-actions" id="mobileQuickActions" style="display: none;">
+                <button class="quick-action-btn" onclick="document.getElementById('calculateBtn').click()">
+                    <i class="fas fa-calculator"></i> Calculate
+                </button>
+                <button class="quick-action-btn" onclick="document.getElementById('resultsSection').scrollIntoView({behavior: 'smooth'})">
+                    <i class="fas fa-chart-bar"></i> Results
+                </button>
+            </div>
         </header>
 
         <div class="main-content">

@@ -1696,7 +1696,137 @@ class RentalPropertyCalculator {
     }
 }
 
+// Mobile viewport handling
+function handleMobileViewport() {
+    // Handle iOS Safari viewport issues
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+        const setViewportHeight = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        
+        setViewportHeight();
+        window.addEventListener('resize', setViewportHeight);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(setViewportHeight, 500);
+        });
+    }
+    
+    // Show mobile quick actions on mobile devices
+    if (window.innerWidth <= 768) {
+        const quickActions = document.getElementById('mobileQuickActions');
+        if (quickActions) {
+            quickActions.style.display = 'flex';
+        }
+    }
+}
+
+// Smooth scroll polyfill for older browsers
+function smoothScrollTo(target) {
+    if (target) {
+        if ('scrollBehavior' in document.documentElement.style) {
+            target.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            // Polyfill for older browsers
+            const targetPosition = target.offsetTop;
+            const startPosition = window.pageYOffset;
+            const distance = targetPosition - startPosition;
+            const duration = 800;
+            let start = null;
+            
+            function animation(currentTime) {
+                if (start === null) start = currentTime;
+                const timeElapsed = currentTime - start;
+                const run = ease(timeElapsed, startPosition, distance, duration);
+                window.scrollTo(0, run);
+                if (timeElapsed < duration) requestAnimationFrame(animation);
+            }
+            
+            function ease(t, b, c, d) {
+                t /= d / 2;
+                if (t < 1) return c / 2 * t * t + b;
+                t--;
+                return -c / 2 * (t * (t - 2) - 1) + b;
+            }
+            
+            requestAnimationFrame(animation);
+        }
+    }
+}
+
+// Mobile-specific enhancements
+function initMobileEnhancements() {
+    // Handle window resize for responsive layout
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            const quickActions = document.getElementById('mobileQuickActions');
+            if (quickActions) {
+                quickActions.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+            }
+        }, 250);
+    });
+    
+    // Add touch feedback for mobile devices
+    if ('ontouchstart' in window) {
+        document.body.classList.add('touch-device');
+        
+        // Add touch feedback to cards
+        const cards = document.querySelectorAll('.summary-card');
+        cards.forEach(card => {
+            card.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.98)';
+            });
+            
+            card.addEventListener('touchend', function() {
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+    }
+    
+    // Improve mobile table scrolling
+    const tableContainers = document.querySelectorAll('.table-container');
+    tableContainers.forEach(container => {
+        let isScrolling = false;
+        
+        container.addEventListener('touchstart', () => {
+            isScrolling = true;
+        });
+        
+        container.addEventListener('touchend', () => {
+            setTimeout(() => {
+                isScrolling = false;
+            }, 100);
+        });
+        
+        // Add scroll indicators
+        container.addEventListener('scroll', function() {
+            const scrollLeft = this.scrollLeft;
+            const scrollWidth = this.scrollWidth;
+            const clientWidth = this.clientWidth;
+            
+            // Add visual feedback for scroll position
+            if (scrollLeft > 0) {
+                this.classList.add('scrolled-left');
+            } else {
+                this.classList.remove('scrolled-left');
+            }
+            
+            if (scrollLeft < scrollWidth - clientWidth - 10) {
+                this.classList.add('can-scroll-right');
+            } else {
+                this.classList.remove('can-scroll-right');
+            }
+        });
+    });
+}
+
 // Initialize the calculator when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     new RentalPropertyCalculator();
+    handleMobileViewport();
+    initMobileEnhancements();
 }); 
