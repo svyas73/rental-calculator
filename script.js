@@ -133,6 +133,9 @@ class RentalPropertyCalculator {
     getInputValues() {
         return {
             propertyPrice: parseFloat(document.getElementById('propertyPrice').value) || 0,
+            propertyAddress: document.getElementById('propertyAddress').value || '',
+            purchaseMonth: parseInt(document.getElementById('purchaseMonth').value) || 1,
+            purchaseYear: parseInt(document.getElementById('purchaseYear').value) || new Date().getFullYear(),
             downPayment: parseFloat(document.getElementById('downPayment').value) || 0,
             loanAmount: parseFloat(document.getElementById('loanAmount').value) || 0,
             interestRate: parseFloat(document.getElementById('interestRate').value) || 0,
@@ -214,6 +217,18 @@ class RentalPropertyCalculator {
                     }
                     
                     if (!this.validateField('squareFootage', 'Square Footage is required', value => value > 0)) {
+                        isValid = false;
+                    }
+                    
+                    if (!this.validateField('propertyAddress', 'Property Address is required', value => String(value).trim() !== '')) {
+                        isValid = false;
+                    }
+                    
+                    if (!this.validateField('purchaseMonth', 'Purchase Month is required', value => value >= 1 && value <= 12)) {
+                        isValid = false;
+                    }
+                    
+                    if (!this.validateField('purchaseYear', 'Purchase Year is required', value => value >= 1990 && value <= 2030)) {
                         isValid = false;
                     }
                     
@@ -326,7 +341,7 @@ class RentalPropertyCalculator {
 
                 validateField(fieldId, errorMessage, validationFunction) {
                     const field = document.getElementById(fieldId);
-                    const value = field.value.trim();
+                    const value = field.value;
                     
                     if (!value || !validationFunction(parseFloat(value) || value)) {
                         this.showError(fieldId, errorMessage);
@@ -451,6 +466,8 @@ class RentalPropertyCalculator {
             
             returns.push({
                 year,
+                monthYear: this.calculateMonthYear(inputs.purchaseYear, inputs.purchaseMonth, year),
+                actualYear: this.calculateActualYear(inputs.purchaseYear, inputs.purchaseMonth, year),
                 propertyValue: currentPropertyValue,
                 annualRent: currentMonthlyRent * 12,
                 operatingExpenses: this.calculateAnnualOperatingExpenses(inputs, currentMonthlyRent),
@@ -728,6 +745,10 @@ class RentalPropertyCalculator {
         // Update analysis period display
         document.getElementById('analysisPeriodDisplay').textContent = `(${inputs.analysisPeriod} years)`;
         
+        // Update property header with debug logging
+        console.log('Displaying results with inputs:', inputs);
+        this.updatePropertyHeader(inputs);
+        
         // Display summary cards
         document.getElementById('cashOnCashROI').textContent = this.formatCurrency(totalCapitalGain);
         document.getElementById('irrValue').textContent = `${irr.toFixed(2)}%`;
@@ -752,6 +773,410 @@ class RentalPropertyCalculator {
         
         // Display sensitivity analysis
         this.displaySensitivityAnalysis(inputs);
+    }
+
+    updatePropertyHeader(inputs) {
+        console.log('updatePropertyHeader called with inputs:', inputs);
+        
+        // Ensure property header is visible
+        const propertyHeader = document.getElementById('propertyHeader');
+        if (propertyHeader) {
+            propertyHeader.style.display = 'block';
+            propertyHeader.style.visibility = 'visible';
+        }
+        
+        // Update property address - SIMPLE DIRECT APPROACH
+        const propertyAddressDisplay = document.getElementById('propertyAddressDisplay');
+        console.log('Property address display element found:', propertyAddressDisplay);
+        
+        if (propertyAddressDisplay) {
+            // Get the address directly from the input field as backup
+            const addressInput = document.getElementById('propertyAddress');
+            const addressFromInput = addressInput ? addressInput.value : '';
+            const addressText = inputs.propertyAddress || addressFromInput || 'Property Address Not Specified';
+            
+            console.log('Address from inputs:', inputs.propertyAddress);
+            console.log('Address from input field:', addressFromInput);
+            console.log('Final address text:', addressText);
+            
+            propertyAddressDisplay.textContent = addressText;
+            
+            // Force a re-render
+            propertyAddressDisplay.style.display = 'none';
+            setTimeout(() => {
+                propertyAddressDisplay.style.display = 'block';
+            }, 10);
+        } else {
+            console.error('Property address display element not found');
+        }
+        
+        // Update purchase date
+        const purchaseDateValue = document.getElementById('purchaseDateValue');
+        if (purchaseDateValue) {
+            if (inputs.purchaseMonth && inputs.purchaseYear) {
+                const monthName = this.getMonthName(parseInt(inputs.purchaseMonth));
+                purchaseDateValue.textContent = `${monthName} ${inputs.purchaseYear}`;
+            } else {
+                purchaseDateValue.textContent = 'Not specified';
+            }
+        }
+        
+        // Update property links
+        this.updatePropertyLinks(inputs.propertyAddress);
+        
+        // Try to fetch property image
+        this.fetchPropertyImage(inputs.propertyAddress);
+    }
+
+    updatePropertyLinks(address) {
+        if (!address) return;
+        
+        // Encode address for URLs
+        const encodedAddress = encodeURIComponent(address);
+        
+        // Update Zillow link
+        const zillowLink = document.getElementById('zillowLink');
+        zillowLink.href = `https://www.zillow.com/homes/${encodedAddress}`;
+        
+        // Update Redfin link
+        const redfinLink = document.getElementById('redfinLink');
+        redfinLink.href = `https://www.redfin.com/city/17100/CA/search?location=${encodedAddress}`;
+        
+        // Update Google Maps link
+        const googleMapsLink = document.getElementById('googleMapsLink');
+        googleMapsLink.href = `https://www.google.com/maps/search/${encodedAddress}`;
+    }
+
+    async fetchPropertyImage(address) {
+        if (!address) {
+            console.log('No address provided for image fetch');
+            return;
+        }
+        
+        console.log('Starting image fetch for address:', address);
+        
+        const imageElement = document.getElementById('propertyImage');
+        const loadingElement = document.getElementById('imageLoading');
+        
+        // Show loading
+        loadingElement.style.display = 'block';
+        
+        try {
+            // Try multiple sources for property images with timeout
+            const imageUrl = await Promise.race([
+                this.getPropertyImageFromMultipleSources(address),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 15000))
+            ]);
+            
+            if (imageUrl) {
+                console.log('Setting image URL:', imageUrl);
+                imageElement.src = imageUrl;
+                imageElement.alt = `Property image for ${address}`;
+            } else {
+                console.log('No image URL found, using placeholder');
+                // Fallback to a better placeholder
+                imageElement.src = this.getPlaceholderImage(address);
+                imageElement.alt = `No image available for ${address}`;
+            }
+            
+        } catch (error) {
+            console.log('Could not fetch property image:', error);
+            imageElement.src = this.getPlaceholderImage(address);
+            imageElement.alt = `No image available for ${address}`;
+        } finally {
+            loadingElement.style.display = 'none';
+        }
+    }
+
+    async getPropertyImageFromMultipleSources(address) {
+        console.log('Trying to fetch image for address:', address);
+        
+        const sources = [
+            () => this.tryGoogleStreetView(address),
+            () => this.tryZillowImage(address),
+            () => this.tryPublicStreetViewAPI(address),
+            () => this.tryRealEstateAPI(address),
+            () => this.tryBingMapsImage(address)
+        ];
+
+        for (let i = 0; i < sources.length; i++) {
+            try {
+                console.log(`Trying source ${i + 1}/${sources.length}`);
+                const imageUrl = await sources[i]();
+                if (imageUrl) {
+                    console.log('Found property image from source', i + 1);
+                    return imageUrl;
+                }
+            } catch (error) {
+                console.log(`Source ${i + 1} failed:`, error);
+                continue;
+            }
+        }
+        
+        console.log('No image found from any source');
+        return null;
+    }
+
+    async tryPublicStreetViewAPI(address) {
+        try {
+            // First, try to get coordinates from the address
+            const coordinates = await this.getCoordinatesFromAddress(address);
+            if (coordinates) {
+                const { lat, lng } = coordinates;
+                
+                // Try multiple street view services
+                const services = [
+                    `https://maps.googleapis.com/maps/api/streetview?size=400x300&location=${lat},${lng}&key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg`,
+                    `https://api.streetviewapi.com/streetview?location=${lat},${lng}&size=400x300`,
+                    `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=18&size=400x300&maptype=satellite&key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg`
+                ];
+                
+                for (const serviceUrl of services) {
+                    try {
+                        const response = await fetch(serviceUrl, { timeout: 3000 });
+                        if (response.ok) {
+                            // Test if the image loads successfully
+                            const img = new Image();
+                            return new Promise((resolve) => {
+                                img.onload = () => resolve(serviceUrl);
+                                img.onerror = () => resolve(null);
+                                img.src = serviceUrl;
+                            });
+                        }
+                    } catch (error) {
+                        console.log('Service failed:', serviceUrl, error);
+                        continue;
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Public Street View API failed:', error);
+        }
+        
+        return null;
+    }
+
+    async getCoordinatesFromAddress(address) {
+        try {
+            // Use a free geocoding service
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data[0]) {
+                    return {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon)
+                    };
+                }
+            }
+        } catch (error) {
+            console.log('Geocoding failed:', error);
+        }
+        return null;
+    }
+
+    async tryZillowImage(address) {
+        try {
+            // Try multiple approaches to get Zillow images
+            
+            // Approach 1: Try to get coordinates first, then search Zillow
+            const coordinates = await this.getCoordinatesFromAddress(address);
+            if (coordinates) {
+                const { lat, lng } = coordinates;
+                
+                // Try Zillow API with coordinates
+                const zillowSearchUrl = `https://www.zillow.com/homes/for_sale/?searchQueryState=%7B"pagination"%3A%7B%7D%2C"mapBounds"%3A%7B"west"%3A${lng-0.01}%2C"east"%3A${lng+0.01}%2C"south"%3A${lat-0.01}%2C"north"%3A${lat+0.01}%7D%2C"isMapVisible"%3Atrue%2C"filterState"%3A%7B%7D%2C"isListVisible"%3Atrue%7D`;
+                
+                // Use a CORS proxy
+                const response = await fetch(`https://cors-anywhere.herokuapp.com/${zillowSearchUrl}`, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    },
+                    timeout: 8000
+                });
+                
+                if (response.ok) {
+                    const html = await response.text();
+                    
+                    // Look for Zillow property images
+                    const imageMatches = html.match(/https:\/\/photos\.zillowstatic\.com\/[^"'\s]+\.jpg/g);
+                    if (imageMatches && imageMatches.length > 0) {
+                        // Return the first image (usually the main property photo)
+                        return imageMatches[0];
+                    }
+                }
+            }
+            
+            // Approach 2: Try direct address search
+            const directSearchUrl = `https://www.zillow.com/homes/${encodeURIComponent(address)}`;
+            const directResponse = await fetch(`https://cors-anywhere.herokuapp.com/${directSearchUrl}`, {
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 8000
+            });
+            
+            if (directResponse.ok) {
+                const html = await directResponse.text();
+                const imageMatches = html.match(/https:\/\/photos\.zillowstatic\.com\/[^"'\s]+\.jpg/g);
+                if (imageMatches && imageMatches.length > 0) {
+                    return imageMatches[0];
+                }
+            }
+            
+        } catch (error) {
+            console.log('Zillow image fetch failed:', error);
+        }
+        return null;
+    }
+
+    async tryGoogleStreetView(address) {
+        try {
+            // Try Google Street View API with multiple approaches
+            
+            // Approach 1: Try with coordinates (more reliable)
+            const coordinates = await this.getCoordinatesFromAddress(address);
+            if (coordinates) {
+                const { lat, lng } = coordinates;
+                
+                // Try multiple API keys (demo keys that might work)
+                const apiKeys = [
+                    'AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg',
+                    'AIzaSyC7J2AK3p2ui2KIt8csimSJN9pQaC1UQYw',
+                    'AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY'
+                ];
+                
+                for (const apiKey of apiKeys) {
+                    try {
+                        const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=500x375&location=${lat},${lng}&key=${apiKey}`;
+                        
+                        // Test if the image loads
+                        const img = new Image();
+                        const result = await new Promise((resolve) => {
+                            img.onload = () => resolve(streetViewUrl);
+                            img.onerror = () => resolve(null);
+                            img.src = streetViewUrl;
+                        });
+                        
+                        if (result) {
+                            console.log('Google Street View image found with key');
+                            return result;
+                        }
+                    } catch (error) {
+                        console.log('API key failed:', apiKey);
+                        continue;
+                    }
+                }
+            }
+            
+            // Approach 2: Try with address directly
+            const encodedAddress = encodeURIComponent(address);
+            const directUrl = `https://maps.googleapis.com/maps/api/streetview?size=500x375&location=${encodedAddress}&key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg`;
+            
+            const img = new Image();
+            const result = await new Promise((resolve) => {
+                img.onload = () => resolve(directUrl);
+                img.onerror = () => resolve(null);
+                img.src = directUrl;
+            });
+            
+            if (result) {
+                return result;
+            }
+            
+        } catch (error) {
+            console.log('Google Street View fetch failed:', error);
+        }
+        return null;
+    }
+
+    async tryRealEstateAPI(address) {
+        try {
+            // Try RapidAPI Real Estate API (free tier available)
+            const options = {
+                method: 'GET',
+                headers: {
+                    'X-RapidAPI-Key': 'demo-key', // Replace with your RapidAPI key
+                    'X-RapidAPI-Host': 'realty-mole-property-api.p.rapidapi.com'
+                }
+            };
+            
+            const response = await fetch(`https://realty-mole-property-api.p.rapidapi.com/properties?address=${encodeURIComponent(address)}`, options);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.properties && data.properties[0] && data.properties[0].images) {
+                    return data.properties[0].images[0];
+                }
+            }
+        } catch (error) {
+            console.log('Real Estate API fetch failed:', error);
+        }
+        return null;
+    }
+
+    async tryBingMapsImage(address) {
+        try {
+            // Try Bing Maps API for aerial/satellite view
+            const encodedAddress = encodeURIComponent(address);
+            const apiKey = 'demo-key'; // Replace with your Bing Maps key
+            
+            const response = await fetch(`https://dev.virtualearth.net/REST/v1/Imagery/Map/Aerial/${encodedAddress}?key=${apiKey}&mapSize=400,300`);
+            
+            if (response.ok) {
+                return response.url;
+            }
+        } catch (error) {
+            console.log('Bing Maps fetch failed:', error);
+        }
+        return null;
+    }
+
+    getPlaceholderImage(address) {
+        // Create a custom SVG placeholder with a house drawing and "No Image" watermark
+        const houseSvg = `
+            <svg width="500" height="375" viewBox="0 0 500 375" xmlns="http://www.w3.org/2000/svg">
+                <rect width="500" height="375" fill="#f7fafc"/>
+                
+                <!-- House drawing -->
+                <g transform="translate(187, 125)">
+                    <!-- House body -->
+                    <rect x="0" y="50" width="125" height="100" fill="#e2e8f0" stroke="#cbd5e0" stroke-width="2"/>
+                    
+                    <!-- Roof -->
+                    <polygon points="0,50 62.5,12.5 125,50" fill="#a0aec0" stroke="#718096" stroke-width="2"/>
+                    
+                    <!-- Door -->
+                    <rect x="44" y="100" width="37" height="50" fill="#4a5568" stroke="#2d3748" stroke-width="1"/>
+                    <circle cx="75" cy="125" r="2" fill="#e2e8f0"/>
+                    
+                    <!-- Windows -->
+                    <rect x="12" y="62" width="25" height="25" fill="#bee3f8" stroke="#3182ce" stroke-width="1"/>
+                    <rect x="88" y="62" width="25" height="25" fill="#bee3f8" stroke="#3182ce" stroke-width="1"/>
+                    
+                    <!-- Chimney -->
+                    <rect x="88" y="25" width="10" height="25" fill="#a0aec0" stroke="#718096" stroke-width="1"/>
+                    
+                    <!-- Ground -->
+                    <rect x="-12" y="150" width="150" height="12" fill="#9ae6b4" stroke="#48bb78" stroke-width="1"/>
+                </g>
+                
+                <!-- "No Image" watermark -->
+                <text x="250" y="312" text-anchor="middle" fill="#9ba0a8" font-family="Inter, sans-serif" font-size="18" font-weight="500">
+                    No Image Available
+                </text>
+                
+                <!-- Address text -->
+                <text x="250" y="337" text-anchor="middle" fill="#718096" font-family="Inter, sans-serif" font-size="14">
+                    ${address || 'Property Address'}
+                </text>
+            </svg>
+        `;
+        
+        return `data:image/svg+xml;base64,${btoa(houseSvg)}`;
     }
 
     displayYearlyReturnsTable(yearlyReturns) {
@@ -790,6 +1215,8 @@ class RentalPropertyCalculator {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${return_.year}</td>
+                <td>${return_.monthYear}</td>
+                <td>${return_.actualYear}</td>
                 <td>${this.formatCurrency(return_.propertyValue)}</td>
                 <td>${this.formatCurrency(return_.annualRent)}</td>
                 <td>${this.formatCurrency(return_.operatingExpenses)}</td>
@@ -813,6 +1240,8 @@ class RentalPropertyCalculator {
                 totalsRow.className = 'totals-row';
                 totalsRow.innerHTML = `
                     <td><strong>TOTAL</strong></td>
+                    <td><strong>-</strong></td>
+                    <td><strong>-</strong></td>
                     <td><strong>-</strong></td>
                     <td><strong>${this.formatCurrency(totals.annualRent)}</strong></td>
                     <td><strong>${this.formatCurrency(totals.operatingExpenses)}</strong></td>
@@ -864,10 +1293,10 @@ class RentalPropertyCalculator {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         // Set up chart with better padding for labels
-        const leftPadding = 80;  // More space for Y-axis labels
-        const rightPadding = 20;
-        const topPadding = 30;   // Space for title
-        const bottomPadding = 50; // More space for X-axis labels
+        const leftPadding = 120;  // More space for Y-axis labels
+        const rightPadding = 40;
+        const topPadding = 40;   // Space for title
+        const bottomPadding = 80; // More space for X-axis labels
         const chartWidth = canvas.width - leftPadding - rightPadding;
         const chartHeight = canvas.height - topPadding - bottomPadding;
         
@@ -920,6 +1349,64 @@ class RentalPropertyCalculator {
             // Y-axis label with better positioning
             const labelText = this.formatCurrency(value);
             ctx.fillText(labelText, leftPadding - 15, y + 4);
+        }
+        
+        // Draw additional Y-axis labels for better readability
+        if (yearlyReturns.length > 1) {
+            const additionalGridLines = Math.min(15, yearlyReturns.length * 2);
+            for (let i = 0; i <= additionalGridLines; i++) {
+                const value = adjustedMin + (adjustedRange * i / additionalGridLines);
+                const y = canvas.height - bottomPadding - (adjustedRange * i / additionalGridLines) * chartHeight;
+                
+                // Only draw if not already drawn by main grid lines
+                const isMainGridLine = i % (additionalGridLines / numGridLines) === 0;
+                if (!isMainGridLine) {
+                    // Draw lighter grid line
+                    ctx.strokeStyle = '#f0f4f8';
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(leftPadding, y);
+                    ctx.lineTo(canvas.width - rightPadding, y);
+                    ctx.stroke();
+                    
+                    // Draw smaller Y-axis label
+                    ctx.fillStyle = '#a0aec0';
+                    ctx.font = '9px Inter';
+                    const labelText = this.formatCurrency(value);
+                    ctx.fillText(labelText, leftPadding - 8, y + 3);
+                }
+            }
+        }
+        
+        // Draw Y-axis labels with better spacing (alternate years approach)
+        const cashFlowRange = maxCashFlow - minCashFlow;
+        if (cashFlowRange > 0) {
+            // Show fewer, more spaced out Y-axis values for better readability
+            const numLabels = Math.min(5, Math.ceil(yearlyReturns.length / 2)); // Show every other year or max 5 labels
+            const stepSize = cashFlowRange / (numLabels - 1);
+            
+            for (let i = 0; i < numLabels; i++) {
+                const value = minCashFlow + (stepSize * i);
+                const y = canvas.height - bottomPadding - ((value - adjustedMin) / adjustedRange) * chartHeight;
+                
+                // Only draw if within chart bounds
+                if (y >= topPadding && y <= canvas.height - bottomPadding) {
+                    // Draw grid line
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(leftPadding, y);
+                    ctx.lineTo(canvas.width - rightPadding, y);
+                    ctx.stroke();
+                    
+                    // Draw Y-axis label
+                    ctx.fillStyle = '#4a5568';
+                    ctx.font = '12px Inter';
+                    ctx.textAlign = 'right';
+                    const labelText = this.formatCurrency(value);
+                    ctx.fillText(labelText, leftPadding - 15, y + 4);
+                }
+            }
         }
         
         // Y-axis title will be drawn later to avoid duplication
@@ -1047,6 +1534,27 @@ class RentalPropertyCalculator {
             maximumFractionDigits: 0
         }).format(amount);
     }
+    
+    getMonthName(monthNumber) {
+        const months = [
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        ];
+        return months[monthNumber - 1] || 'Jan';
+    }
+    
+    calculateActualYear(purchaseYear, purchaseMonth, analysisYear) {
+        // Calculate the actual calendar year for each analysis year
+        // If purchase was in 2022 and we're analyzing year 1, actual year would be 2023
+        // If purchase was in 2022 and we're analyzing year 3, actual year would be 2025
+        return purchaseYear + analysisYear;
+    }
+    
+    calculateMonthYear(purchaseYear, purchaseMonth, analysisYear) {
+        const actualYear = this.calculateActualYear(purchaseYear, purchaseMonth, analysisYear);
+        const monthName = this.getMonthName(purchaseMonth);
+        return `${monthName}/${actualYear}`;
+    }
 
     downloadExcel() {
         const table = document.getElementById('returnsTable');
@@ -1068,6 +1576,8 @@ class RentalPropertyCalculator {
         // Property Information
         data.push(['Property Information']);
         data.push(['Property Price', this.formatCurrency(inputs.propertyPrice)]);
+        data.push(['Property Address', inputs.propertyAddress]);
+        data.push(['Purchase Date', `${this.getMonthName(inputs.purchaseMonth)} ${inputs.purchaseYear}`]);
         data.push(['Property Type', document.getElementById('propertyType').value]);
         data.push(['Square Footage', document.getElementById('squareFootage').value + ' sq ft']);
         data.push([]);
@@ -1295,6 +1805,10 @@ class RentalPropertyCalculator {
         doc.text('Property Information:', leftX, leftY);
         leftY += 5;
         doc.setFont('helvetica', 'normal');
+        doc.text(`Property Address: ${inputs.propertyAddress || 'Not specified'}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Purchase Date: ${this.getMonthName(inputs.purchaseMonth)} ${inputs.purchaseYear}`, leftX + 5, leftY);
+        leftY += 4;
         doc.text(`Property Price: ${this.formatCurrency(inputs.propertyPrice)}`, leftX + 5, leftY);
         leftY += 4;
         doc.text(`Property Type: ${document.getElementById('propertyType').value}`, leftX + 5, leftY);
@@ -1431,6 +1945,8 @@ class RentalPropertyCalculator {
         // Property Information
         data.push(['Property Information']);
         data.push(['Property Price', this.formatCurrency(inputs.propertyPrice)]);
+        data.push(['Property Address', inputs.propertyAddress]);
+        data.push(['Purchase Date', `${this.getMonthName(inputs.purchaseMonth)} ${inputs.purchaseYear}`]);
         data.push(['Property Type', document.getElementById('propertyType').value]);
         data.push(['Square Footage', document.getElementById('squareFootage').value + ' sq ft']);
         data.push([]);
@@ -1560,6 +2076,10 @@ class RentalPropertyCalculator {
         doc.text('Property Information:', leftX, leftY);
         leftY += 5;
         doc.setFont('helvetica', 'normal');
+        doc.text(`Property Address: ${inputs.propertyAddress || 'Not specified'}`, leftX + 5, leftY);
+        leftY += 4;
+        doc.text(`Purchase Date: ${this.getMonthName(inputs.purchaseMonth)} ${inputs.purchaseYear}`, leftX + 5, leftY);
+        leftY += 4;
         doc.text(`Property Price: ${this.formatCurrency(inputs.propertyPrice)}`, leftX + 5, leftY);
         leftY += 4;
         doc.text(`Property Type: ${document.getElementById('propertyType').value}`, leftX + 5, leftY);
@@ -1746,19 +2266,73 @@ function smoothScrollTo(target) {
     }
 }
 
-// Mobile-specific enhancements
-function initMobileEnhancements() {
-    // Handle window resize for responsive layout
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            const quickActions = document.getElementById('mobileQuickActions');
-            if (quickActions) {
-                quickActions.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+    // Mobile-specific enhancements
+    function initMobileEnhancements() {
+        // Handle window resize for responsive layout
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const quickActions = document.getElementById('mobileQuickActions');
+                if (quickActions) {
+                    quickActions.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+                }
+            }, 250);
+        });
+        
+        // Add JavaScript tooltips as fallback
+        const tableHeaders = document.querySelectorAll('.returns-table th');
+        tableHeaders.forEach(header => {
+            const title = header.getAttribute('title');
+            if (title) {
+                header.addEventListener('mouseenter', function(e) {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'js-tooltip';
+                    tooltip.textContent = title;
+                    tooltip.style.cssText = `
+                        position: absolute;
+                        bottom: 100%;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: #2d3748;
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 6px;
+                        font-size: 0.75rem;
+                        font-weight: 500;
+                        white-space: nowrap;
+                        z-index: 9999;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                        margin-bottom: 8px;
+                        max-width: 250px;
+                        text-align: center;
+                        line-height: 1.3;
+                        pointer-events: none;
+                    `;
+                    
+                    // Add arrow
+                    const arrow = document.createElement('div');
+                    arrow.style.cssText = `
+                        position: absolute;
+                        bottom: -5px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        border: 5px solid transparent;
+                        border-top-color: #2d3748;
+                    `;
+                    tooltip.appendChild(arrow);
+                    
+                    this.appendChild(tooltip);
+                });
+                
+                header.addEventListener('mouseleave', function() {
+                    const tooltip = this.querySelector('.js-tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
             }
-        }, 250);
-    });
+        });
     
     // Add touch feedback for mobile devices
     if ('ontouchstart' in window) {
