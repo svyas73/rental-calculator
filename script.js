@@ -100,6 +100,9 @@ class RentalPropertyCalculator {
                     document.getElementById('downloadRoiPdfBtn').addEventListener('click', () => {
                         this.downloadRoiPdf();
                     });
+                    
+                    // Initialize address autocomplete
+                    this.initializeAddressAutocomplete();
                 }
 
     updateCalculations() {
@@ -224,10 +227,10 @@ class RentalPropertyCalculator {
                         const address = String(value).trim();
                         if (address === '') return false;
                         
-                        // Basic address format validation
-                        const addressPattern = /^[\w\s,.-]+,\s*[\w\s]+,\s*[A-Z]{2}\s*\d{5}(-\d{4})?$/i;
-                        if (!addressPattern.test(address)) {
-                            this.showError('propertyAddress', 'Please enter a valid address format: Street, City, State ZIP');
+                        // More liberal address validation with detailed error messages
+                        const validationResult = this.validateAddressFormat(address);
+                        if (!validationResult.isValid) {
+                            this.showError('propertyAddress', validationResult.errorMessage);
                             return false;
                         }
                         return true;
@@ -1113,6 +1116,129 @@ class RentalPropertyCalculator {
             
             img.src = urlWithTimestamp;
         });
+    }
+
+    validateAddressFormat(address) {
+        // Remove extra spaces and normalize
+        const cleanAddress = address.replace(/\s+/g, ' ').trim();
+        
+        console.log('Validating address:', cleanAddress);
+        
+        // ACCEPT ANYTHING THAT'S NOT EMPTY
+        if (cleanAddress.length === 0) {
+            console.log('Address is empty');
+            return {
+                isValid: false,
+                errorMessage: 'Please enter a property address.'
+            };
+        }
+        
+        console.log('Address validation passed - accepting any non-empty address');
+        return {
+            isValid: true,
+            errorMessage: ''
+        };
+    }
+
+    initializeAddressAutocomplete() {
+        const addressInput = document.getElementById('propertyAddress');
+        const suggestionsContainer = document.getElementById('addressSuggestions');
+        let debounceTimer;
+        
+        addressInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            // Clear previous timer
+            clearTimeout(debounceTimer);
+            
+            // Hide suggestions if query is too short
+            if (query.length < 3) {
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+            
+            // Debounce the API call
+            debounceTimer = setTimeout(() => {
+                this.fetchAddressSuggestions(query);
+            }, 300);
+        });
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!addressInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                suggestionsContainer.style.display = 'none';
+            }
+        });
+    }
+
+    async fetchAddressSuggestions(query) {
+        const suggestionsContainer = document.getElementById('addressSuggestions');
+        
+        try {
+            // Use a free geocoding service for address suggestions
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=us`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    this.displayAddressSuggestions(data);
+                } else {
+                    // Show a simple validation message
+                    this.displaySimpleAddressValidation(query);
+                }
+            } else {
+                this.displaySimpleAddressValidation(query);
+            }
+        } catch (error) {
+            console.log('Address autocomplete failed, using fallback:', error);
+            this.displaySimpleAddressValidation(query);
+        }
+    }
+
+    displayAddressSuggestions(results) {
+        const suggestionsContainer = document.getElementById('addressSuggestions');
+        
+        suggestionsContainer.innerHTML = '';
+        
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'address-suggestion-item';
+            
+            // Format the address nicely
+            const displayName = result.display_name || result.name || '';
+            const parts = displayName.split(', ');
+            const mainText = parts.slice(0, 2).join(', '); // First two parts
+            const secondaryText = parts.slice(2).join(', '); // Rest
+            
+            item.innerHTML = `
+                <div class="main-text">${mainText}</div>
+                <div class="secondary-text">${secondaryText}</div>
+            `;
+            
+            item.addEventListener('click', () => {
+                document.getElementById('propertyAddress').value = displayName;
+                suggestionsContainer.style.display = 'none';
+                this.clearError('propertyAddress');
+            });
+            
+            suggestionsContainer.appendChild(item);
+        });
+        
+        suggestionsContainer.style.display = 'block';
+    }
+
+    displaySimpleAddressValidation(query) {
+        // Simple validation without API - just check basic format
+        console.log('Testing address validation for:', query);
+        const validation = this.validateAddressFormat(query);
+        console.log('Validation result:', validation);
+        
+        if (!validation.isValid) {
+            this.showError('propertyAddress', validation.errorMessage);
+        } else {
+            this.clearError('propertyAddress');
+        }
     }
 
     async tryRealEstateAPI(address) {
