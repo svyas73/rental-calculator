@@ -220,7 +220,18 @@ class RentalPropertyCalculator {
                         isValid = false;
                     }
                     
-                    if (!this.validateField('propertyAddress', 'Property Address is required', value => String(value).trim() !== '')) {
+                    if (!this.validateField('propertyAddress', 'Property Address is required', value => {
+                        const address = String(value).trim();
+                        if (address === '') return false;
+                        
+                        // Basic address format validation
+                        const addressPattern = /^[\w\s,.-]+,\s*[\w\s]+,\s*[A-Z]{2}\s*\d{5}(-\d{4})?$/i;
+                        if (!addressPattern.test(address)) {
+                            this.showError('propertyAddress', 'Please enter a valid address format: Street, City, State ZIP');
+                            return false;
+                        }
+                        return true;
+                    })) {
                         isValid = false;
                     }
                     
@@ -1053,14 +1064,8 @@ class RentalPropertyCalculator {
                     try {
                         const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=500x375&location=${lat},${lng}&key=${apiKey}`;
                         
-                        // Test if the image loads
-                        const img = new Image();
-                        const result = await new Promise((resolve) => {
-                            img.onload = () => resolve(streetViewUrl);
-                            img.onerror = () => resolve(null);
-                            img.src = streetViewUrl;
-                        });
-                        
+                        // Test if the image loads with CORS handling
+                        const result = await this.testImageLoad(streetViewUrl);
                         if (result) {
                             console.log('Google Street View image found with key');
                             return result;
@@ -1076,13 +1081,7 @@ class RentalPropertyCalculator {
             const encodedAddress = encodeURIComponent(address);
             const directUrl = `https://maps.googleapis.com/maps/api/streetview?size=500x375&location=${encodedAddress}&key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg`;
             
-            const img = new Image();
-            const result = await new Promise((resolve) => {
-                img.onload = () => resolve(directUrl);
-                img.onerror = () => resolve(null);
-                img.src = directUrl;
-            });
-            
+            const result = await this.testImageLoad(directUrl);
             if (result) {
                 return result;
             }
@@ -1091,6 +1090,29 @@ class RentalPropertyCalculator {
             console.log('Google Street View fetch failed:', error);
         }
         return null;
+    }
+
+    async testImageLoad(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous'; // Try to handle CORS
+            
+            img.onload = () => {
+                console.log('Image loaded successfully:', url);
+                resolve(url);
+            };
+            
+            img.onerror = () => {
+                console.log('Image failed to load:', url);
+                resolve(null);
+            };
+            
+            // Add timestamp to avoid caching issues
+            const timestamp = new Date().getTime();
+            const urlWithTimestamp = url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
+            
+            img.src = urlWithTimestamp;
+        });
     }
 
     async tryRealEstateAPI(address) {
